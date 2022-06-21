@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical" android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal" >
+        <ToggleButton
+            android:id="@+id/toggleButton_cameraOpenClose"
+            android:layout_width="wrap_content"
+            android:layout_height="30dp"
+            android:layout_weight="1"
+            android:text="ToggleButton"
+            android:textSize="10sp"
+            android:textOff="Camera close"
+            android:textOn="Camera open" />
+        <ToggleButton
+            android:id="@+id/toggleButton_captureStartStop"
+            android:layout_width="wrap_content"
+            android:layout_height="30dp"
+            android:layout_weight="1"
+            android:textSize="10sp"
+
+            android:text="cameraOpenClose"
+            android:textOff="Stop capture"
+            android:textOn="Start capture" />
+        <ToggleButton
+            android:id="@+id/toggleButton_previewStartStop"
+            android:layout_width="wrap_content"
+            android:layout_height="30dp"
+            android:layout_weight="1"
+            android:textSize="10sp"
+
+            android:text="previewOpenClose"
+            android:textOff="Stop preview"
+            android:textOn="Start preview" />
+    </LinearLayout>
+
+
+
+    <TextView
+        android:id="@+id/textView_captureState"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textSize="10sp"
+        android:text="unknown" />
+
+    <Spinner
+        android:id="@+id/spinner_cpatureInfo"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        />
+
+
+    <!-- Exposure property -->
+
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+
+        <SurfaceView
+            android:id="@+id/surfaceView_preview"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+
+        <ru.object.detection.util.view.RecognitionResultOverlayView
+            android:id="@+id/result_overlay2"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            >
+
+
+
+            <SeekBar
+                android:id="@+id/seekBar_brightness"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:min="0" />
+
+
+
+
+
+            <!-- Focus -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+
+
+
+            </LinearLayout>
+
+
+
+
+            <TextView
+                android:id="@+id/textView_framerate"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textColor="@color/colorAccent"
+android:textSize="10sp"
+                android:text="Framerate" />
+
+            <!-- debug -->
+            <TextView
+                android:id="@+id/textView_test"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textColor="@color/colorAccent"
+
+                android:text="Test"
+                android:textSize="8sp" />
+        </LinearLayout>
+    </FrameLayout>
+</LinearLayout>
