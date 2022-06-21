@@ -1,0 +1,9 @@
+Jumpers
+LEDs
+GLCD Display Place
+microBoard socket
+LCD display place
+Push Buttons
+Piezo Buzzer
+MCC_SD card connector
+
