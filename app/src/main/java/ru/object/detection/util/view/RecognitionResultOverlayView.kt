@@ -16,8 +16,9 @@ class RecognitionResultOverlayView @JvmOverloads constructor(
 ) : View(context, attrs, defStyleAttr) {
 
     private val boxPaint = Paint().apply {
-        color = Color.GREEN
-        style = Paint.Style.STROKE
+        color = Color.MAGENTA
+        style = Paint.Style.FILL_AND_STROKE
+        alpha = 100
         strokeWidth = 2f
     }
 

@@ -337,7 +337,7 @@ try {
         }
         return toInput;
     }
-   
+
 
     @Override
     public void onCameraOpened() {
