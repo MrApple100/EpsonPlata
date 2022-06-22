@@ -80,29 +80,15 @@ public class MoverioCameraSampleFragment extends AppCompatActivity implements Ca
     private ToggleButton mToggleButton_cameraOpenClose = null;
     private ToggleButton mToggleButton_captureStartStop = null;
     private ToggleButton mToggleButton_previewStartStop = null;
-    private Switch mSwitch_autoExposure = null;
-    private TextView mTextView_exposure = null;
-    private SeekBar mSeekBar_exposure = null;
-    private TextView mTextView_brightness = null;
+
     private SeekBar mSeekBar_brightness = null;
-    private TextView mTextView_whitebalance = null;
-    private RadioGroup mRadioGroup_whitebalance = null;
-    private TextView mTextView_powerLineFrequency = null;
-    private RadioGroup mRadioGroup_powerLineFrequency = null;
-    private TextView mTextView_captureFormat = null;
-    private RadioGroup mRadioGroup_captureFormat = null;
-    private TextView mTextView_indicatorMode = null;
-    private RadioGroup mRadioGroup_indicatorMode = null;
+
     private SurfaceView mSurfaceView_preview = null;
 
     private TextView mTextView_captureState = null;
     private Spinner mSpinner_captureInfo = null;
 
-    private Switch mSwitch_autoFocus = null;
-    private TextView mTextView_focus = null;
-    private SeekBar mSeekBar_focus = null;
-    private TextView mTextView_cameraGain = null;
-    private SeekBar mSeekBar_cameraGain = null;
+
 
     private TextView mTextView_framerate = null;
     private CalcurationRate mCalcurationRate_framerate = null;
@@ -123,6 +109,7 @@ public class MoverioCameraSampleFragment extends AppCompatActivity implements Ca
             "model_q.tflite",
             "labelmap.txt"
     );
+    private ObjectDetectorAnalyzer analyzer=null;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -274,12 +261,9 @@ public class MoverioCameraSampleFragment extends AppCompatActivity implements Ca
 
     @Override
     public void onCaptureData(long timestamp, byte[] datamass) {
-       // mTextView_captureState.setText("onCaptureData:"+timestamp+",size:"+datamass.length);
         mCalcurationRate_framerate.updata();
 try {
-   // Bitmap output = BitmapFactory.decodeByteArray(datamass, 0, datamass.length);
     ByteBuffer data = ByteBuffer.wrap(datamass);
-   // Bitmap output = getOutputImage(data);
     data.rewind();
     Bitmap output = getArgbBitmap(mCameraDevice.getProperty().getCaptureSize()[0],mCameraDevice.getProperty().getCaptureSize()[1]);
 
@@ -353,25 +337,7 @@ try {
         }
         return toInput;
     }
-    private Bitmap getOutputImage(ByteBuffer output){
-        output.rewind();
-
-        int outputWidth = mCameraDevice.getProperty().getCaptureSize()[0];
-        int outputHeight = mCameraDevice.getProperty().getCaptureSize()[1];
-        Bitmap bitmap = Bitmap.createBitmap(outputWidth, outputHeight, Bitmap.Config.ARGB_8888);
-        int [] pixels = new int[outputWidth * outputHeight];
-        for (int i = 0; i < outputWidth * outputHeight; i++) {
-            int a = 0xFF;
-
-            float r = output.getFloat() * 255.0f;
-            float g = output.getFloat() * 255.0f;
-            float b = output.getFloat() * 255.0f;
-
-            pixels[i] = a << 24 | ((int) r << 16) | ((int) g << 8) | (int) b;
-        }
-        bitmap.setPixels(pixels, 0, outputWidth, 0, 0, outputWidth, outputHeight);
-        return bitmap;
-    }
+   
 
     @Override
     public void onCameraOpened() {
