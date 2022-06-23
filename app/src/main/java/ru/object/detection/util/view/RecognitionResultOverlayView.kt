@@ -18,7 +18,7 @@ class RecognitionResultOverlayView @JvmOverloads constructor(
         attrs: AttributeSet? = null,
         defStyleAttr: Int = 0
 ) : View(context, attrs, defStyleAttr) {
-    private val scenary:Scenary = Scenary(context = context)
+    private val scenery:Scenery = Scenery(context = context)
     private val maintext:TextView = findViewById<TextView>(R.id.MainText)
     private val reset:Button= findViewById<Button>(R.id.Reset)
 
@@ -26,7 +26,7 @@ class RecognitionResultOverlayView @JvmOverloads constructor(
     init{
         maintext.text = context.getString(R.string.Find_processor)
         reset.setOnClickListener(View.OnClickListener {
-            scenary.reset()
+            scenery.reset()
         })
     }
     private val allLabels = DetectorUtils.loadLabelsFile(context.assets, "labelmap.txt")
@@ -34,7 +34,7 @@ class RecognitionResultOverlayView @JvmOverloads constructor(
     private val boxPaint = Paint().apply {
         color = Color.MAGENTA
         style = Paint.Style.FILL_AND_STROKE
-        alpha = 100
+        alpha = 100 //from 0(transparent) to 255
         strokeWidth = 2f
     }
 
@@ -61,12 +61,12 @@ class RecognitionResultOverlayView @JvmOverloads constructor(
         val idProcessorPlace = 10
         result.objects.forEach { obj ->
 
-
-            if(obj.id == idProcessor && !scenary.FindStep){
-                scenary.checkFind()
+//scenery
+            if(obj.id == idProcessor && !scenery.FindStep){
+                scenery.checkFind()
                 maintext.text = context.getString(R.string.Insert_to_place)
             }
-            if(scenary.FindStep && !scenary.InsertStep){
+            if(scenery.FindStep && !scenery.InsertStep){
 
                 val left = obj.location.left * scaleFactorX
                 val top = obj.location.top * scaleFactorY
@@ -110,7 +110,7 @@ class RecognitionResultOverlayView @JvmOverloads constructor(
 enum class ColorsEnum{
     magenta,red,blue,green,cyan,yellow,darkgray
 }
-class Scenary (
+class Scenery (
     var FindStep:Boolean = false,
     var InsertStep: Boolean = false,
     val context: Context
