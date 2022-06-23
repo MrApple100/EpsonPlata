@@ -34,6 +34,7 @@ class ObjectDetector constructor(
                 Interpreter.Options()
                         .setNumThreads(numThreads)
                         .setUseNNAPI(useNnapi)
+
         )
     }
 

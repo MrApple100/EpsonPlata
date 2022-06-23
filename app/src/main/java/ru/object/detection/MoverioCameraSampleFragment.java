@@ -318,7 +318,7 @@ try {
                     config.getModelFile(),
                     config.getLabelsFile(),
                     false,
-                    1,
+                    3,
                     config.getMinimumConfidence(),
                     config.getNumDetection(),
                     config.getInputSize(),

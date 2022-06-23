@@ -2,4 +2,7 @@
     <string name="app_name">ObjectDetectionDemo</string>
     <string name="description_info">tflite object detection</string>
     <string name="request_permission">This app needs camera permission.</string>
+
+    <string name="Find_processor">Найдите процессор</string>
+    <string name="Insert_to_place">Вставьте процессор в плату</string>
 </resources>
