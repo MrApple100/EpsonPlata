@@ -6,4 +6,13 @@ LCD display place
 Push Buttons
 Piezo Buzzer
 MCC_SD card connector
+Processor
+ProcessorPlace
+Buzzer
+Ports
+DisplayEasyTFT
+DebugUSB
+Joystick
+ButtonPressLevel
+
 

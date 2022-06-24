@@ -46,67 +46,85 @@ class RecognitionResultOverlayView @JvmOverloads constructor(
         invalidate()
     }
     var MainText:String = context.getString(R.string.Find_processor)
+    private var counter =0
+    val idProcessor = allLabels[8]
+    val idProcessorPlace = allLabels[9]
     override fun onDraw(canvas: Canvas) {
         val result = result ?: return
 
+            //Snackbar.make(getWindow().getDecorView(), e.getLocalizedMessage(), Snackbar.LENGTH_SHORT).show();
 
-        //Snackbar.make(getWindow().getDecorView(), e.getLocalizedMessage(), Snackbar.LENGTH_SHORT).show();
+            val scaleFactorX = measuredWidth / result.imageWidth.toFloat()
+            val scaleFactorY = measuredHeight / result.imageHeight.toFloat()
 
-        val scaleFactorX = measuredWidth / result.imageWidth.toFloat()
-        val scaleFactorY = measuredHeight / result.imageHeight.toFloat()
-        val idProcessor = allLabels.get(8)
-        val idProcessorPlace = allLabels.get(9)
-        result.objects.forEach { obj ->
+            result.objects.forEach { obj ->
 
 //scenery
-            if(obj.title == idProcessor && !scenery.FindStep){
-                scenery.checkFind()
-                MainText = context.getString(R.string.Insert_to_place)
-            }
-            if(scenery.FindStep && !scenery.InsertStep){
+                try {
 
-                val left = obj.location.left * scaleFactorX
-                val top = obj.location.top * scaleFactorY
-                val right = obj.location.right * scaleFactorX
-                val bottom = obj.location.bottom * scaleFactorY
+                    if (obj.title == idProcessor) {
+                    counter++
+                }
+                if (obj.title == idProcessor && counter >= 5 && !scenery.FindStep) {
+                    scenery.checkFind()
+                    MainText = context.getString(R.string.Insert_to_place)
+                }
+                if (scenery.FindStep && !scenery.InsertStep) {
 
-                val currentIndex = allLabels.indexOf( obj.title )
-                //красным горит место куда надо вставить
-                if(obj.title==idProcessorPlace) {
-                    boxPaint.color = Color.RED
-                    textPaint.color = Color.RED
+                    val left = obj.location.left * scaleFactorX
+                    val top = obj.location.top * scaleFactorY
+                    val right = obj.location.right * scaleFactorX
+                    val bottom = obj.location.bottom * scaleFactorY
+
+                    val currentIndex = allLabels.indexOf(obj.title)
+                    //красным горит место куда надо вставить
+                    if (obj.title == idProcessorPlace) {
+                        boxPaint.color = Color.RED
+                        textPaint.color = Color.RED
+                        canvas.drawRect(left, top, right, bottom, boxPaint)
+                        canvas.drawText(obj.text, left, top - 25f, textPaint)
+                    }
+                    //зеленым процессор который надо вставить
+                    if (obj.title == idProcessor) {
+                        boxPaint.color = Color.GREEN
+                        textPaint.color = Color.GREEN
+                        canvas.drawRect(left, top, right, bottom, boxPaint)
+                        canvas.drawText(obj.text, left, top - 25f, textPaint)
+                    }
+                } else {
+                    //вне сценария горят все элементы
+                    val left = obj.location.left * scaleFactorX
+                    val top = obj.location.top * scaleFactorY
+                    val right = obj.location.right * scaleFactorX
+                    val bottom = obj.location.bottom * scaleFactorY
+
+                    val currentIndex = allLabels.indexOf(obj.title)
+                    boxPaint.color =
+                        Color.parseColor(ColorsEnum.values()[currentIndex / ColorsEnum.values().size].name)
+                    textPaint.color =
+                        Color.parseColor(ColorsEnum.values()[currentIndex / ColorsEnum.values().size].name)
+
                     canvas.drawRect(left, top, right, bottom, boxPaint)
                     canvas.drawText(obj.text, left, top - 25f, textPaint)
+
+
                 }
-                //зеленым процессор который надо вставить
-                if(obj.title==idProcessor) {
-                    boxPaint.color = Color.GREEN
-                    textPaint.color = Color.GREEN
-                    canvas.drawRect(left, top, right, bottom, boxPaint)
-                    canvas.drawText(obj.text, left, top - 25f, textPaint)
-                }
-            }else {
-                //вне сценария горят все элементы
-                val left = obj.location.left * scaleFactorX
-                val top = obj.location.top * scaleFactorY
-                val right = obj.location.right * scaleFactorX
-                val bottom = obj.location.bottom * scaleFactorY
 
-                val currentIndex = allLabels.indexOf(obj.title)
-                boxPaint.color =
-                    Color.parseColor(ColorsEnum.values()[currentIndex / ColorsEnum.values().size].name)
-                textPaint.color =
-                    Color.parseColor(ColorsEnum.values()[currentIndex / ColorsEnum.values().size].name)
-
-                canvas.drawRect(left, top, right, bottom, boxPaint)
-                canvas.drawText(obj.text, left, top - 25f, textPaint)
-
-
-
+                canvas.drawText(
+                    MainText,
+                    canvas.width / 2 - 100f,
+                    canvas.height - 25f,
+                    MaintextPaint
+                )
+                }catch(e:Exception){
+                    canvas.drawText(
+                        e.localizedMessage,
+                        canvas.width / 2 - 100f,
+                        canvas.height - 25f,
+                        MaintextPaint
+                    )                }
             }
 
-            canvas.drawText(MainText, canvas.width/2-100f, canvas.height - 25f, MaintextPaint)
-        }
     }
 }
 enum class ColorsEnum{
