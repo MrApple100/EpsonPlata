@@ -14,33 +14,29 @@ import ru.`object`.detection.camera.ObjectDetectorAnalyzer
 import ru.`object`.detection.util.DetectorUtils
 
 class RecognitionResultOverlayView @JvmOverloads constructor(
-        context: Context,
-        attrs: AttributeSet? = null,
-        defStyleAttr: Int = 0
+    context: Context,
+    attrs: AttributeSet? = null,
+    defStyleAttr: Int = 0
 ) : View(context, attrs, defStyleAttr) {
-    private val scenery:Scenery = Scenery(context = context)
-    private val maintext:TextView = findViewById<TextView>(R.id.MainText)
-    private val reset:Button= findViewById<Button>(R.id.Reset)
+    private val scenery: Scenery = Scenery(context = context)
 
-
-    init{
-        maintext.text = context.getString(R.string.Find_processor)
-        reset.setOnClickListener(View.OnClickListener {
-            scenery.reset()
-        })
-    }
     private val allLabels = DetectorUtils.loadLabelsFile(context.assets, "labelmap.txt")
 
     private val boxPaint = Paint().apply {
         color = Color.MAGENTA
-        style = Paint.Style.FILL_AND_STROKE
-        alpha = 100 //from 0(transparent) to 255
-        strokeWidth = 2f
+        style = Paint.Style.STROKE
+        //alpha = 220 //from 0(transparent) to 255
+
+        strokeWidth = 5f
     }
 
     private val textPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         color = Color.CYAN
         textSize = 35f
+    }
+    private val MaintextPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = Color.WHITE
+        textSize = 55f
     }
 
     private var result: ObjectDetectorAnalyzer.Result? = null
@@ -49,22 +45,23 @@ class RecognitionResultOverlayView @JvmOverloads constructor(
         this.result = result
         invalidate()
     }
-
+    var MainText:String = context.getString(R.string.Find_processor)
     override fun onDraw(canvas: Canvas) {
         val result = result ?: return
+
 
         //Snackbar.make(getWindow().getDecorView(), e.getLocalizedMessage(), Snackbar.LENGTH_SHORT).show();
 
         val scaleFactorX = measuredWidth / result.imageWidth.toFloat()
         val scaleFactorY = measuredHeight / result.imageHeight.toFloat()
-        val idProcessor = 9
-        val idProcessorPlace = 10
+        val idProcessor = allLabels.get(8)
+        val idProcessorPlace = allLabels.get(9)
         result.objects.forEach { obj ->
 
 //scenery
-            if(obj.id == idProcessor && !scenery.FindStep){
+            if(obj.title == idProcessor && !scenery.FindStep){
                 scenery.checkFind()
-                maintext.text = context.getString(R.string.Insert_to_place)
+                MainText = context.getString(R.string.Insert_to_place)
             }
             if(scenery.FindStep && !scenery.InsertStep){
 
@@ -75,14 +72,14 @@ class RecognitionResultOverlayView @JvmOverloads constructor(
 
                 val currentIndex = allLabels.indexOf( obj.title )
                 //красным горит место куда надо вставить
-                if(obj.id==idProcessorPlace) {
+                if(obj.title==idProcessorPlace) {
                     boxPaint.color = Color.RED
                     textPaint.color = Color.RED
                     canvas.drawRect(left, top, right, bottom, boxPaint)
                     canvas.drawText(obj.text, left, top - 25f, textPaint)
                 }
                 //зеленым процессор который надо вставить
-                if(obj.id==idProcessor) {
+                if(obj.title==idProcessor) {
                     boxPaint.color = Color.GREEN
                     textPaint.color = Color.GREEN
                     canvas.drawRect(left, top, right, bottom, boxPaint)
@@ -103,7 +100,12 @@ class RecognitionResultOverlayView @JvmOverloads constructor(
 
                 canvas.drawRect(left, top, right, bottom, boxPaint)
                 canvas.drawText(obj.text, left, top - 25f, textPaint)
+
+
+
             }
+
+            canvas.drawText(MainText, canvas.width/2-100f, canvas.height - 25f, MaintextPaint)
         }
     }
 }
@@ -114,18 +116,21 @@ class Scenery (
     var FindStep:Boolean = false,
     var InsertStep: Boolean = false,
     val context: Context
-        ){
+){
 
     fun checkFind(): Unit {
         FindStep=true
+
     }
     fun checkInsert(): Unit {
+
         InsertStep=true
     }
 
     fun reset(): Unit {
         FindStep=false
         InsertStep=false
+
     }
 
 

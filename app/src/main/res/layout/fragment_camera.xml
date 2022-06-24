@@ -162,13 +162,13 @@ android:textSize="10sp"
             android:layout_gravity="bottom"
             android:gravity="end"
             android:orientation="vertical">
-        <ImageView
-            android:layout_width="100dp"
-            android:layout_height="100dp"
-            android:layout_margin="10dp">\
+            <ImageView
+                android:layout_width="100dp"
+                android:layout_height="100dp"
+                android:layout_margin="10dp">\
 
 
-        </ImageView>
+            </ImageView>
         </LinearLayout>
     </FrameLayout>
 </LinearLayout>
