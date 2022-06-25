@@ -63,9 +63,12 @@ class RecognitionResultOverlayView @JvmOverloads constructor(
                 try {
 
                     if (obj.title == idProcessor) {
-                    counter++
-                }
-                if (obj.title == idProcessor && counter >= 5 && !scenery.FindStep) {
+                        counter++
+                    }else {
+                        counter=0
+                    }
+
+                if (obj.title == idProcessor && counter >= 15 && !scenery.FindStep) {
                     scenery.checkFind()
                     MainText = context.getString(R.string.Insert_to_place)
                 }
