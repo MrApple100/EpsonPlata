@@ -122,6 +122,8 @@ public class MoverioCameraSampleFragment extends AppCompatActivity implements Ca
         result_overlay = findViewById(R.id.result_overlay2);
         mSurfaceView_preview = (SurfaceView) findViewById(R.id.surfaceView_preview);
 
+        result_overlay.setDescriptionText(findViewById(R.id.DescriptionText));
+
 
         mContext = this;
         mCameraManager = new CameraManager(mContext, this);
@@ -244,7 +246,7 @@ public class MoverioCameraSampleFragment extends AppCompatActivity implements Ca
     @Override
     public void onPause() {
         super.onPause();
-        mDeviceManager.unregisterHeadsetStateCallback(this);
+       // mDeviceManager.unregisterHeadsetStateCallback(this);
     }
     @Override
     public void onDestroy() {
