@@ -5,7 +5,11 @@
     <color name="colorAccent">#d2d0d1</color>
     <color name="black">#000000</color>
 
-    <color name="semi_transparent">#66000000</color>
+    <color name="semi_transparent">#d2d0d1</color>
 
     <color name="magenta"></color>
+
+    <color name="Berezoviy" >#4D33BBB0</color>
+    <color name="grayspinner">#33FFFFFF</color>
+
 </resources>
