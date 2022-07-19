@@ -14,3 +14,14 @@ DisplayEasyTFT - Дисплей для отображение данных с д
 DebugUSB - обработка всех юсб входов
 Joystick - управление курсором на экране, взаимодействие
 ButtonPressLevel - переключатели для изменения инструкций
+PlataGreenWithProcessor - плата с процессором
+PlataGreenWithoutProcessor - плата без процессора
+PlataBlue - плата с синим элементом
+PlataOrange - плата с оранжевым элементом
+Platamicroboard - плата с надписью microboard
+Digit - вывод чисел на экран
+DebugOrange - для отладки usb 
+DebugBlue - для отладки usb 
+PortsBlueOrange - порты для соединения новых плат
+DisplayBlue - дисплей для плывущей строки
+click - клик

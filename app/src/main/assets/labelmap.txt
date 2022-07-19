@@ -14,3 +14,14 @@ DisplayEasyTFT
 DebugUSB
 Joystick
 ButtonPressLevel
+PlataGreenWithProcessor
+PlataGreenWithoutProcessor
+PlataBlue
+PlataOrange
+Platamicroboard
+Digit
+DebugOrange
+DebugBlue
+PortsBlueOrange
+DisplayBlue
+click
