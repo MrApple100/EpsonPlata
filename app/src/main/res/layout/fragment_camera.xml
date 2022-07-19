@@ -51,6 +51,7 @@
             android:background="@color/Berezoviy"
             android:textColor="@color/colorAccent"
             android:text="3rer"
+            android:gravity="center_vertical"
             >
 
         </TextView>
