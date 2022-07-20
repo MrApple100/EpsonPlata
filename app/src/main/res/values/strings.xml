@@ -5,4 +5,5 @@
 
     <string name="Find_processor">Найдите процессор</string>
     <string name="Insert_to_place">Вставьте процессор в плату</string>
+    <string name="Congratulation">Успешно выполнено</string>
 </resources>

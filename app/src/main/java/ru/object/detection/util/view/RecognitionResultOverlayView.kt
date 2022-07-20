@@ -28,7 +28,7 @@ class RecognitionResultOverlayView @JvmOverloads constructor(
 
     private var objectsDetectedOld = HashMap<String,Int>()
     private val objectsDetectedNew = HashMap<String,Int>()
-    private val objectsDetectedWait = HashMap<String,Int>()
+    private var objectsDetectedWait = HashMap<String,Int>()
 
     private val objectsAngles = HashMap<String,DetectionResult>()
 
@@ -155,7 +155,9 @@ class RecognitionResultOverlayView @JvmOverloads constructor(
                 objectsDetectedWait.set(i,0)
 
             }else{
-                objectsDetectedWait.set(i,objectsDetectedWait.get(i)?.plus(1)!!)
+                if(objectsDetectedWait.get(i)!!<=10){
+                    objectsDetectedWait.set(i,objectsDetectedWait.get(i)?.plus(1)!!)
+                }
                 Log.d("WAITWAIT",objectsDetectedWait.toString())
                 Log.d("WAITWAIT---",objectsDetectedOld.toString())
                 if(objectsDetectedWait.get(i)!! >= 10) {//2 sec wait 30 fps
@@ -223,6 +225,21 @@ class RecognitionResultOverlayView @JvmOverloads constructor(
                                 }
                             }
                         }
+                        if (Platas.get("PlataGreenWithProcessor")!!) {
+                            if (scenery.FindStep && !scenery.InsertStep) {
+                                scenery.checkInsert()
+                                MainText = context.getString(R.string.Congratulation)
+
+                            }
+                        }
+                        if(scenery.FindStep && scenery.InsertStep){
+                            boxPaint.color = ab
+                            textPaint.color = Color.WHITE
+                            if (obj.title != "click") {
+                                canvas.drawRect(left, top, right, bottom, boxPaint)
+                                canvas.drawText(obj.text, left, top + 25f, textPaint)
+                            }
+                        }
                     } else {
 
                         MainText = context.getString(R.string.Find_processor)
@@ -240,26 +257,34 @@ class RecognitionResultOverlayView @JvmOverloads constructor(
 
                     }
                     //Проверять только тогда когда клик есть на сцене
-                    if (objectsSetOld.contains("click")) {
-                        //Совпадение середины клика с элементом
-                        if (checkPointInRect(
-                                left,
-                                top,
-                                right,
-                                bottom,
-                                ((objectsAngles.get("click")?.location?.left!! + objectsAngles.get(
-                                    "click"
-                                )?.location?.right!!) / 2+(-10)).toFloat(),
-                                ((objectsAngles.get("click")?.location?.top!! + objectsAngles.get(
-                                    "click"
-                                )?.location?.bottom!!) / 2 +(-10)).toFloat()
-                            )
-                        ) {
-                            listDescriptionOnDisplay.clear()
-                            listDescriptionOnDisplay.add(listObjectForDescribe.get(obj.title)!!)
+                    // if (objectsSetOld.contains("click")) {
+                    //Совпадение середины клика с элементом
+                    /*if (checkPointInRect(
+                            left,
+                            top,
+                            right,
+                            bottom,
+                            ((objectsAngles.get("click")?.location?.left!! + objectsAngles.get(
+                                "click"
+                            )?.location?.right!!) / 2+(-10)).toFloat(),
+                            ((objectsAngles.get("click")?.location?.top!! + objectsAngles.get(
+                                "click"
+                            )?.location?.bottom!!) / 2 +(-10)).toFloat()
+                        )*/
+                    if (checkPointInRect(
+                            left,
+                            top,
+                            right,
+                            bottom,
+                            (canvas.width / 2).toFloat(),
+                            (canvas.height/ 2).toFloat()
+                        )
+                    ) {
+                        listDescriptionOnDisplay.clear()
+                        listDescriptionOnDisplay.add(listObjectForDescribe.get(obj.title)!!)
 
-                        }
                     }
+                    // }
 
                 }
             } catch (e: Exception) {
@@ -290,6 +315,17 @@ class RecognitionResultOverlayView @JvmOverloads constructor(
             MaintextPaint
         )
         canvas.drawCircle((canvas.width/2).toFloat(), (canvas.height/2).toFloat(),8f,centerPaint)
+        if (objectsSetOld.contains("click")) {
+
+            /*canvas.drawCircle(
+                ((objectsAngles.get("click")?.location?.left!! + objectsAngles.get(
+                    "click"
+                )?.location?.right!!) / 2 + (-10)).toFloat(),
+                ((objectsAngles.get("click")?.location?.top!! + objectsAngles.get(
+                    "click"
+                )?.location?.bottom!!) / 2 + (-10)).toFloat(), 8f, centerPaint
+            )*/
+        }
 
     }
 
