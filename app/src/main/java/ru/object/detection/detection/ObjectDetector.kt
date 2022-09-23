@@ -7,15 +7,16 @@ import ru.`object`.detection.util.DetectorUtils
 import java.nio.ByteBuffer
 
 class ObjectDetector constructor(
-        assetManager: AssetManager,
-        modelFilename: String,
-        labelFilename: String,
-        useNnapi: Boolean = false,
-        numThreads: Int = DetectorUtils.NUM_THREADS,
-        private val minimumConfidence: Float,
-        private val numDetections: Int,
-        private val inputSize: Int = 0,
-        private val isModelQuantized: Boolean = false
+    assetManager: AssetManager,
+    modelFilename: String,
+    labelFilename: String,
+    barcodetextTolink:String,
+    useNnapi: Boolean = false,
+    numThreads: Int = DetectorUtils.NUM_THREADS,
+    private val minimumConfidence: Float,
+    private val numDetections: Int,
+    private val inputSize: Int = 0,
+    private val isModelQuantized: Boolean = false
 ) {
 
     private var labels: List<String> = emptyList()
@@ -27,23 +28,24 @@ class ObjectDetector constructor(
     init {
         labels = DetectorUtils.loadLabelsFile(assetManager, labelFilename)
 
+
         imgData = DetectorUtils.createImageBuffer(inputSize, isModelQuantized)
 
         interpreter = Interpreter(
-                DetectorUtils.loadModelFile(assetManager, modelFilename),
-                Interpreter.Options()
-                        .setNumThreads(numThreads)
-                        .setUseNNAPI(useNnapi)
+            DetectorUtils.loadModelFile(assetManager, modelFilename),
+            Interpreter.Options()
+                .setNumThreads(numThreads)
+                .setUseNNAPI(useNnapi)
 
         )
     }
 
     fun detect(pixels: IntArray): List<DetectionResult> {
         DetectorUtils.fillBuffer(
-                imgData = imgData,
-                pixels = pixels,
-                inputSize = inputSize,
-                isModelQuantized = isModelQuantized
+            imgData = imgData,
+            pixels = pixels,
+            inputSize = inputSize,
+            isModelQuantized = isModelQuantized
         )
 
         val inputArray = arrayOf(imgData)
@@ -70,10 +72,10 @@ class ObjectDetector constructor(
             val title = labels[holder.outputClasses[0][i].toInt() + labelOffset]
 
             val location = RectF(
-                    holder.outputLocations[0][i][1] * inputSize,
-                    holder.outputLocations[0][i][0] * inputSize,
-                    holder.outputLocations[0][i][3] * inputSize,
-                    holder.outputLocations[0][i][2] * inputSize
+                holder.outputLocations[0][i][1] * inputSize,
+                holder.outputLocations[0][i][0] * inputSize,
+                holder.outputLocations[0][i][3] * inputSize,
+                holder.outputLocations[0][i][2] * inputSize
             )
 
             result.add(DetectionResult(id = i, title = title, confidence = confidence, location = location))

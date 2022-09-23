@@ -26,6 +26,13 @@ object DetectorUtils {
         return assets.open(labelFilename).bufferedReader().use { it.readLines() }
     }
 
+    fun loadBarcodetextToLinkFile(assets: AssetManager, labelFilename: String): List<Pair<String, String>> {
+        return assets.open(labelFilename).bufferedReader().use { it.readLines().map { it2 ->
+            val they = it2.split(" ")
+            Pair<String,String>(they[0],they[1])
+        } }
+    }
+
     fun createImageBuffer(inputSize: Int, isModelQuantized: Boolean): ByteBuffer {
         val numBytesPerChannel: Int = if (isModelQuantized) 1 else 4
         val buffer = ByteBuffer.allocateDirect(1 * inputSize * inputSize * 3 * numBytesPerChannel)
@@ -34,10 +41,10 @@ object DetectorUtils {
     }
 
     fun fillBuffer(
-            imgData: ByteBuffer,
-            pixels: IntArray,
-            inputSize: Int,
-            isModelQuantized: Boolean
+        imgData: ByteBuffer,
+        pixels: IntArray,
+        inputSize: Int,
+        isModelQuantized: Boolean
     ) {
         imgData.rewind()
         for (i in 0 until inputSize) {

@@ -1,20 +1,23 @@
 package ru.`object`.detection.util.view
 
+import android.R.attr
 import android.content.Context
-import android.graphics.Canvas
-import android.graphics.Color
-import android.graphics.Paint
+import android.graphics.*
 import android.util.AttributeSet
 import android.util.Log
 import android.view.View
+import android.webkit.WebSettings
+import android.webkit.WebView
+import android.webkit.WebViewClient
 import android.widget.TextView
 import android.widget.Toast
+import com.google.zxing.Result
 import org.tensorflow.lite.examples.detection.R
 import ru.`object`.detection.camera.ObjectDetectorAnalyzer
 import ru.`object`.detection.detection.DetectionResult
 import ru.`object`.detection.util.DetectorUtils
 import java.util.*
-import kotlin.collections.HashMap
+
 
 class RecognitionResultOverlayView @JvmOverloads constructor(
     context: Context,
@@ -30,7 +33,7 @@ class RecognitionResultOverlayView @JvmOverloads constructor(
     private val objectsDetectedNew = HashMap<String,Int>()
     private var objectsDetectedWait = HashMap<String,Int>()
 
-    private val objectsAngles = HashMap<String,DetectionResult>()
+    private val objectsAngles = HashMap<String, DetectionResult>()
 
     private var listObjectForDescribe = HashMap<String,String>()
     private var listDescriptionOnDisplay = arrayListOf<String>()
@@ -45,11 +48,17 @@ class RecognitionResultOverlayView @JvmOverloads constructor(
     }
     private val scenery: Scenery = Scenery(context = context)
 
-    private val allLabels = DetectorUtils.loadLabelsFile(context.assets, "labelmap.txt")
+    private val allLabels = DetectorUtils.loadLabelsFile(context.assets, "labelmap_face.txt")
 
     private val allDescribes = DetectorUtils.loadLabelsFile(context.assets, "descriptionmap.txt")
 
-    private lateinit var textView:TextView
+    private val bartextTolink = DetectorUtils.loadBarcodetextToLinkFile(context.assets, "barcodetextTolink.txt")
+
+
+    private lateinit var textView: TextView
+    private lateinit var webView: WebView
+    private var currentY = 500
+
 
     init{
         for( i in 0 until allLabels.size){
@@ -60,6 +69,9 @@ class RecognitionResultOverlayView @JvmOverloads constructor(
 
     fun setDescriptionText(text:TextView){
         textView = text
+    }
+    fun setWebView(web: WebView){
+        webView = web
     }
 
 
@@ -86,25 +98,43 @@ class RecognitionResultOverlayView @JvmOverloads constructor(
     }
 
     private var result: ObjectDetectorAnalyzer.Result? = null
+    private var barcoderesult: Result? = null
 
-    fun updateResults(result: ObjectDetectorAnalyzer.Result) {
+
+    private var handbound: Array<IntArray>? = null
+    private var FirstUp = false
+    private var FirstBottom = false
+    private var time = 0
+
+    private var handboundVsplesk = FloatArray(300) { 0.0f }
+    private var intArray = IntArray(300 * 800)
+
+
+    fun updateResults(result: ObjectDetectorAnalyzer.Result, barcoderesult: Result?,handbound:Array<IntArray>?) {
         this.result = result
+        this.barcoderesult =  barcoderesult
+        this.handbound = handbound
         invalidate()
     }
     var MainText:String = context.getString(R.string.Find_processor)
     private var counter =0
-    val idProcessor = allLabels[8]
-    val idProcessorPlace = allLabels[9]
+    val idProcessor = allLabels[0] //
+    val idProcessorPlace = allLabels[0] //
+
+
+    //barcode article
+    private var onthescene=false;
     override fun onDraw(canvas: Canvas) {
         //reset
         objectsDetectedNew.clear()
 
         val result = result ?: return
-        var newresult= result.objects
+        Log.d("FACEFACE",result.objects.toString())
+        var newresult= result.objects as MutableList<DetectionResult>
         //К данным которые на экране добавили данные которые были в прошлом фрейме но еще живут в массиве wait
         for( i in objectsAngles.values.filter { obj -> objectsDetectedWait.get(obj.title)!! >=0 && objectsDetectedWait.get(obj.title)!! <=10 }){
             if(newresult.find { it.title==i.title }==null){
-                newresult=newresult.plus(i)
+                newresult=newresult.plus(i) as MutableList<DetectionResult>
 
             }
         }
@@ -209,19 +239,19 @@ class RecognitionResultOverlayView @JvmOverloads constructor(
                                 boxPaint.color = ar
                                 textPaint.color = Color.WHITE
                                 canvas.drawRect(left, top, right, bottom, boxPaint)
-                                canvas.drawText(obj.text, left, top + 25f, textPaint)
+                                // canvas.drawText(obj.text, left, top + 25f, textPaint)
                             } else if (obj.title == idProcessor) {                     //зеленым процессор который надо вставить
 
                                 boxPaint.color = ag
                                 textPaint.color = Color.WHITE
                                 canvas.drawRect(left, top, right, bottom, boxPaint)
-                                canvas.drawText(obj.text, left, top + 25f, textPaint)
+                                // canvas.drawText(obj.text, left, top + 25f, textPaint)
                             } else {
                                 boxPaint.color = ab
                                 textPaint.color = Color.WHITE
                                 if (obj.title != "click") {
                                     canvas.drawRect(left, top, right, bottom, boxPaint)
-                                    canvas.drawText(obj.text, left, top + 25f, textPaint)
+                                    //   canvas.drawText(obj.text, left, top + 25f, textPaint)
                                 }
                             }
                         }
@@ -237,7 +267,7 @@ class RecognitionResultOverlayView @JvmOverloads constructor(
                             textPaint.color = Color.WHITE
                             if (obj.title != "click") {
                                 canvas.drawRect(left, top, right, bottom, boxPaint)
-                                canvas.drawText(obj.text, left, top + 25f, textPaint)
+                                // canvas.drawText(obj.text, left, top + 25f, textPaint)
                             }
                         }
                     } else {
@@ -252,7 +282,7 @@ class RecognitionResultOverlayView @JvmOverloads constructor(
                         if (obj.title != "click") {
 
                             canvas.drawRect(left, top, right, bottom, boxPaint)
-                            canvas.drawText(obj.text, left, top + 25f, textPaint)
+                            //  canvas.drawText(obj.text, left, top + 25f, textPaint)
                         }
 
                     }
@@ -270,7 +300,7 @@ class RecognitionResultOverlayView @JvmOverloads constructor(
                             ((objectsAngles.get("click")?.location?.top!! + objectsAngles.get(
                                 "click"
                             )?.location?.bottom!!) / 2 +(-10)).toFloat()
-                        )*/
+                        ))*/
                     if (checkPointInRect(
                             left,
                             top,
@@ -317,17 +347,159 @@ class RecognitionResultOverlayView @JvmOverloads constructor(
         canvas.drawCircle((canvas.width/2).toFloat(), (canvas.height/2).toFloat(),8f,centerPaint)
         if (objectsSetOld.contains("click")) {
 
-            /*canvas.drawCircle(
+            canvas.drawCircle(
                 ((objectsAngles.get("click")?.location?.left!! + objectsAngles.get(
                     "click"
                 )?.location?.right!!) / 2 + (-10)).toFloat(),
                 ((objectsAngles.get("click")?.location?.top!! + objectsAngles.get(
                     "click"
                 )?.location?.bottom!!) / 2 + (-10)).toFloat(), 8f, centerPaint
-            )*/
+            )
         }
 
+        //работа с barcoderesult
+        if(barcoderesult!=null) {
+            if(barcoderesult!!.text.isNotEmpty() && !onthescene) {
+                onthescene = true
+                Log.d("barcodetext", barcoderesult!!.text)
+                if(barcoderesult!!.text.contains("http")){
+                    // runBlocking(Dispatchers.Default){
+                    val pair = bartextTolink.find{it -> it.first==(barcoderesult?.text)}
+                    if(pair!=null) {
+                        showPdfOnPage(pair.second)
+                    }
+                    // }
+                }
+            }
+        }
+
+        //работа с рукой
+        if(time>0){
+            time--
+        }
+        if(handbound!=null) {
+            for (i in 0 until handbound!!.size) {
+                for (j in 0 until handbound!![i].size) {
+
+                    handboundVsplesk[i] +=handbound!![i][j].toFloat()
+                    intArray.set(i * j + j, handbound!![i][j]*1200000)
+
+                    /* if(handbound!![i][j]==1) {
+                            centerPaint.color = Color.WHITE
+                            canvas.drawCircle(i.toFloat(), j.toFloat(), 3.0f, centerPaint)
+                        }
+                        else {
+                            centerPaint.color = Color.BLACK
+                            canvas.drawCircle(i.toFloat(), j.toFloat(), 3.0f, centerPaint)
+                        }*/
+                }
+                if(handboundVsplesk[i]>0){
+                    Log.d("Edin1",handboundVsplesk[i].toString() + " "+handbound!![i].size.toString())
+                }
+                handboundVsplesk[i] /=handbound!![i].size.toFloat()
+                Log.d("Edin2",handboundVsplesk[i].toString())
+
+            }
+
+            var header =0.0f
+            for(i in 0 until handboundVsplesk.size/3){
+                header+=handboundVsplesk[i]
+            }
+            header/=(handboundVsplesk.size/3)
+
+            var footer =0.0f
+            var padding = handboundVsplesk.size*2/3
+            for(i in 0 until handboundVsplesk.size/3){
+                footer+=handboundVsplesk[i+padding]
+            }
+            footer/=(handboundVsplesk.size/3)
+            if(header>0.04){
+                FirstUp=true
+                if(FirstBottom && time>0){
+                    swipeUp(canvas)
+                    FirstUp=false
+                    FirstBottom=false
+                    time=0
+                }else {
+                    time = 30
+                }
+            }
+            if(footer>0.04){
+                FirstBottom=true
+                if(FirstUp && time>0){
+                    swipeDown(canvas)
+                    FirstUp=false
+                    FirstBottom=false
+                    time=0
+                }else {
+                    time = 30
+                }
+            }
+            for(i in handboundVsplesk.indices){
+                Log.d("VSPLESK",handboundVsplesk[i].toString())
+                if(handboundVsplesk[i]>0.035f){
+                    canvas.drawCircle(10.0f,10.0f*i+2.0f,2.0f,boxPaint)
+
+                }else {
+                    canvas.drawCircle(10.0f,10.0f*i+2.0f,2.0f,centerPaint)
+                }
+            }
+            if(header>0.02){
+                canvas.drawCircle(50.0f,10.0f,5.0f,boxPaint)
+            }else{
+                canvas.drawCircle(50.0f,10.0f,5.0f,centerPaint)
+
+            }
+            if(footer>0.02){
+                canvas.drawCircle(70.0f,10.0f,5.0f,boxPaint)
+            }else{
+                canvas.drawCircle(70.0f,10.0f,5.0f,centerPaint)
+
+            }
+            canvas.drawBitmap(
+                Bitmap.createBitmap(
+                    intArray,
+                    handbound!!.size,
+                    handbound!![0].size,
+                    Bitmap.Config.ARGB_8888
+                ), 0.0f, 0.0f, centerPaint
+            )
+        }
     }
+
+    private fun swipeUp(canvas: Canvas){
+        canvas.drawCircle(100.0f,100.0f,10.0f,centerPaint)
+        currentY -=500
+        if(currentY-500<0)
+            currentY=0
+        webView.scrollY = currentY
+
+    }
+    private fun swipeDown(canvas: Canvas){
+        canvas.drawCircle(100.0f,100.0f,10.0f,boxPaint)
+        currentY +=500
+
+        webView.scrollY = currentY
+
+
+    }
+    private fun showPdfOnPage(LinkTo :String){
+        webView.settings.javaScriptEnabled = true
+        webView.settings.pluginState = WebSettings.PluginState.ON
+        webView.visibility = VISIBLE
+        webView.webViewClient = object : WebViewClient() {
+            override fun shouldOverrideUrlLoading(view: WebView, url: String): Boolean {
+                view.loadUrl(url)
+                return true
+            }
+        }
+        webView.loadUrl(LinkTo)
+        webView.scrollY = currentY
+
+    }
+
+
+
 
     // function to find if given point
     // lies inside a given rectangle or not.
@@ -366,5 +538,323 @@ class Scenery (
 
     }
 
+
+/*
+    private var rgbBitmap: Bitmap? = null
+    private var matrixToInput: Matrix? = null
+
+
+    private val TEXT_SIZE_DIP = 18f
+    private val MIN_SIZE = 16.0f
+    private val COLORS = intArrayOf(
+        Color.BLUE,
+        Color.RED,
+        Color.GREEN,
+        Color.YELLOW,
+        Color.CYAN,
+        Color.MAGENTA,
+        Color.WHITE,
+        Color.parseColor("#55FF55"),
+        Color.parseColor("#FFA500"),
+        Color.parseColor("#FF8888"),
+        Color.parseColor("#AAAAFF"),
+        Color.parseColor("#FFFFAA"),
+        Color.parseColor("#55AAAA"),
+        Color.parseColor("#AA33AA"),
+        Color.parseColor("#0D0068")
+    )
+    val screenRects: List<Pair<Float, RectF>> = LinkedList()
+    private val availableColors: Queue<Int> = LinkedList()
+    private val trackedObjects: List<org.tensorflow.lite.examples.detection.tracking.MultiBoxTracker.TrackedRecognition> =
+        LinkedList<org.tensorflow.lite.examples.detection.tracking.MultiBoxTracker.TrackedRecognition>()
+    private val boxPaint = Paint().apply {
+
+        setColor(Color.RED)
+        setStyle(Paint.Style.STROKE)
+        setStrokeWidth(10.0f)
+        setStrokeCap(Cap.ROUND)
+        setStrokeJoin(Join.ROUND)
+        setStrokeMiter(100f)
+
+
+    }
+    private val textSizePx = TypedValue.applyDimension(
+        TypedValue.COMPLEX_UNIT_DIP,
+        18F,
+        context.resources.displayMetrics
+    )
+    private val borderedText: BorderedText? = BorderedText(textSizePx)
+    private var frameToCanvasMatrix: Matrix? = null
+    private var frameWidth = 0
+    private var frameHeight = 0
+    private val sensorOrientation = 0
+
+    @Synchronized
+    fun setFrameConfiguration(
+        width: Int, height: Int, sensorOrientation: Int
+    ) {
+        frameWidth = width
+        frameHeight = height
+        this.sensorOrientation = sensorOrientation
+    }
+
+    @Synchronized
+    fun trackResults(results: List<SimilarityClassifier.Recognition>, timestamp: Long) {
+        logger.i("Processing %d results from %d", results.size, timestamp)
+        processResults(results)
+    }
+
+    private fun getFrameToCanvasMatrix(): Matrix {
+        return frameToCanvasMatrix!!
+    }
+
+    private var lastsq: Float? = null
+    private var nowsq: Float? = null
+
+    @Synchronized
+    fun draw(canvas: Canvas, context: Context) {
+        val rotated = sensorOrientation % 180 == 90
+        val multiplier = Math.min(
+            canvas.height / (if (rotated) frameWidth else frameHeight).toFloat(),
+            canvas.width / (if (rotated) frameHeight else frameWidth).toFloat()
+        )
+        frameToCanvasMatrix = ImageUtils.getTransformationMatrix(
+            frameWidth,
+            frameHeight,
+            (multiplier * if (rotated) frameHeight else frameWidth).toInt(),
+            (multiplier * if (rotated) frameWidth else frameHeight).toInt(),
+            sensorOrientation,
+            false
+        )
+        for (recognition in trackedObjects) {
+            val trackedPos = RectF(recognition.location)
+            val SQUERE = trackedPos.width() * trackedPos.height()
+            if (lastsq == null) {
+                lastsq = SQUERE
+            }
+            nowsq = SQUERE
+            val SQUEREMAX = 300000.0f
+            val canvasSQUERE = canvas.width * canvas.height
+            getFrameToCanvasMatrix().mapRect(trackedPos)
+            boxPaint.color = recognition.color
+            val cornerSize = Math.min(trackedPos.width(), trackedPos.height()) / 8.0f
+            // canvas.drawRoundRect(trackedPos, cornerSize, cornerSize, boxPaint);
+            @SuppressLint("DefaultLocale") val strConfidence =
+                if (recognition.detectionConfidence < 0) "" else String.format(
+                    "%.2f",
+                    recognition.detectionConfidence
+                ) + ""
+            val labelString = if (!TextUtils.isEmpty(recognition.title)) String.format(
+                "%s %s",
+                recognition.title,
+                strConfidence
+            ) else strConfidence
+            //label up box
+            //borderedText.drawText(canvas, trackedPos.left + cornerSize, trackedPos.top, (Math.pow(SQUERE/SQUEREMAX,0.5f))+" ", boxPaint);
+
+            //borderedText.drawText(canvas, trackedPos.left + cornerSize, trackedPos.bottom, canvasSQUERE+"", boxPaint);
+            val mine = BitmapFactory.decodeResource(context.resources, R.drawable.mine)
+            val matrix = Matrix()
+            plavno(canvas, mine, matrix, lastsq, nowsq, SQUEREMAX, trackedPos)
+            *//*  matrix.postScale((float)(1.0f*0.5/Math.pow(SQUERE/SQUEREMAX,0.05f)),(float)(1.0f*0.5/Math.pow(SQUERE/SQUEREMAX,0.05f)));
+      canvas.drawBitmap(mine,matrix,boxPaint);*//*
+        }
+        lastsq = nowsq
+    }
+
+    private fun plavno(
+        canvas: Canvas,
+        mine: Bitmap,
+        matrix: Matrix,
+        lastsq: Float?,
+        nowsq: Float?,
+        SQUEREMAX: Float,
+        trackedPos: RectF
+    ) {
+        *//* if(lastsq<nowsq) {
+      for (float i = lastsq; i < nowsq; i +=(nowsq-lastsq)/1) {
+        matrix.postScale((float) (1.0f * 0.5 / Math.pow(i / SQUEREMAX, 0.05f)), (float) (1.0f * 0.5 / Math.pow(i / SQUEREMAX, 0.05f)));
+
+      }
+    }else{
+      for (float i = lastsq; i > nowsq; i -=(lastsq-nowsq)/1) {
+        matrix.postScale((float) (1.0f * 0.5 / Math.pow(i / SQUEREMAX, 0.05f)), (float) (1.0f * 0.5 / Math.pow(i / SQUEREMAX, 0.05f)));
+        canvas.drawBitmap(mine,matrix,boxPaint);
+
+      }
+    }*//*
+
+        // Bitmap rgbBitmap = getArgbBitmap((float)(1.0f*0.5/Math.pow(nowsq/SQUEREMAX,0.05f)), (float)(1.0f*0.5/Math.pow(nowsq/SQUEREMAX,0.05f)));
+
+        // yuvToRgbConverter.yuvToRgb(image, rgbBitmap)
+        var toInput = matrixToInput!!
+        if (toInput == null) {
+            toInput = ImageUtils2().getTransformMatrix(
+                0, mine.width, mine.height,
+                (mine.width * (1.0f * 0.1 / Math.pow(
+                    (nowsq!! / SQUEREMAX).toDouble(),
+                    0.05
+                ))).toInt(),
+                (mine.height * (1.0f * 0.1 / Math.pow(
+                    (nowsq / SQUEREMAX).toDouble(),
+                    0.05
+                ))).toInt()
+            )
+            matrixToInput = toInput
+        }
+        val transformation = toInput
+        var resizedBitmap = Bitmap.createBitmap(
+            (mine.width * (1.0f * 0.5 / Math.pow((nowsq!! / SQUEREMAX).toDouble(), 0.05))).toInt(),
+            (mine.height * (1.0f * 0.5 / Math.pow((nowsq / SQUEREMAX).toDouble(), 0.05))).toInt(),
+            Bitmap.Config.ARGB_8888
+        )
+
+        //new Canvas(resizedBitmap).drawBitmap(mine, transformation, null);
+        resizedBitmap = Bitmap.createScaledBitmap(
+            mine,
+            (mine.width * (1.0f * 0.1 / Math.pow((nowsq / SQUEREMAX).toDouble(), 0.3))).toInt(),
+            (mine.height * (1.0f * 0.1 / Math.pow((nowsq / SQUEREMAX).toDouble(), 0.3))).toInt(),
+            false
+        )
+        val centerx = canvas.width / 2
+        val centery = canvas.height / 2
+        val angleX = (-((centery - trackedPos.centerY()) / centery * 40)).toInt()
+        val angleY = ((centerx - trackedPos.centerX()) / centerx * 10).toInt()
+        Log.d("BoxBox1", angleX.toString() + "")
+        Log.d("BoxBox1", trackedPos.centerY().toString() + "")
+        Log.d("BoxBox1", centery.toString() + "")
+        Log.d("BoxBox", centery.toString() + "")
+        Log.d("BoxBox", resizedBitmap.width.toString() + "")
+        // matrix.postScale((float)(1.0f*0.5/Math.pow(nowsq/SQUEREMAX,0.05f)),(float)(1.0f*0.5/Math.pow(nowsq/SQUEREMAX,0.05f)));
+        try {
+            //Snippet from a function used to handle a draw
+            val camera = Camera()
+            val matrix2 = Matrix()
+            canvas.save() //save a 'clean' matrix that doesn't have any camera rotation in it's matrix
+            ApplyMatrix(
+                canvas,
+                camera,
+                matrix2,
+                angleX,
+                angleY *//*,x,y,z*//*
+            ) //apply rotated matrix to canvas
+            canvas.drawBitmap(
+                resizedBitmap,
+                (centerx - resizedBitmap.width / 2).toFloat(),
+                (centery - resizedBitmap.height / 2).toFloat(),
+                boxPaint
+            )
+            //      camera.applyToCanvas(canvas);
+            canvas.restore() //restore clean matrix
+        } catch (e: Exception) {
+        }
+
+
+//
+    }
+
+    fun ApplyMatrix(
+        mCanvas: Canvas,
+        mCamera: Camera,
+        mMatrix: Matrix,
+        angleX: Int,
+        angleY: Int *//*,float x,float y,float z*//*
+    ) {
+        mCamera.save()
+        mCamera.rotateX(angleX.toFloat())
+        mCamera.rotateY(angleY.toFloat())
+        mCamera.rotateZ(0f)
+        mCamera.getMatrix(mMatrix)
+        *//*  mCamera.setLocation(x,y,z);*//*
+        val CenterX = mCanvas.width / 2
+        val CenterY = mCanvas.height / 2
+        mMatrix.preTranslate(
+            -CenterX.toFloat(),
+            -CenterY.toFloat()
+        ) //This is the key to getting the correct viewing perspective
+        mMatrix.postTranslate(CenterX.toFloat(), CenterY.toFloat())
+        mCanvas.concat(mMatrix)
+        mCamera.restore()
+    }
+
+    private fun getArgbBitmap(width: Float, height: Float): Bitmap? {
+        var bitmap = rgbBitmap!!
+        if (bitmap == null) {
+            bitmap = Bitmap.createBitmap(width.toInt(), height.toInt(), Bitmap.Config.ARGB_8888)
+            rgbBitmap = bitmap
+        }
+        return bitmap
+    }
+    *//*private Matrix getTransformation(Integer srcWidth,Integer srcHeight) {
+    Matrix toInput = matrixToInput;
+    if (toInput == null) {
+      toInput = ImageUtil.INSTANCE.getTransformMatrix(0, srcWidth, srcHeight, config.inputSize, config.inputSize);
+      matrixToInput = toInput;
+    }
+    return toInput;
+  }*//*
+
+    *//*private Matrix getTransformation(Integer srcWidth,Integer srcHeight) {
+    Matrix toInput = matrixToInput;
+    if (toInput == null) {
+      toInput = ImageUtil.INSTANCE.getTransformMatrix(0, srcWidth, srcHeight, config.inputSize, config.inputSize);
+      matrixToInput = toInput;
+    }
+    return toInput;
+  }*//*
+    private fun processResults(results: List<SimilarityClassifier.Recognition>) {
+        val rectsToTrack: MutableList<Pair<Float, SimilarityClassifier.Recognition>> =
+            LinkedList<Pair<Float, SimilarityClassifier.Recognition>>()
+        screenRects.clear()
+        val rgbFrameToScreen = Matrix(getFrameToCanvasMatrix())
+        for (result in results) {
+            if (result.getLocation() == null) {
+                continue
+            }
+            val detectionFrameRect = RectF(result.getLocation())
+            val detectionScreenRect = RectF()
+            rgbFrameToScreen.mapRect(detectionScreenRect, detectionFrameRect)
+            logger.v(
+                "Result! Frame: " + result.getLocation()
+                    .toString() + " mapped to screen:" + detectionScreenRect
+            )
+            screenRects.add(Pair<Float, RectF>(result.getDistance(), detectionScreenRect))
+            if (detectionFrameRect.width() < org.tensorflow.lite.examples.detection.tracking.MultiBoxTracker.MIN_SIZE || detectionFrameRect.height() < org.tensorflow.lite.examples.detection.tracking.MultiBoxTracker.MIN_SIZE) {
+                logger.w("Degenerate rectangle! $detectionFrameRect")
+                continue
+            }
+            rectsToTrack.add(Pair<Float, SimilarityClassifier.Recognition>(result.getDistance(), result))
+        }
+        trackedObjects.clear()
+        if (rectsToTrack.isEmpty()) {
+            logger.v("Nothing to track, aborting.")
+            return
+        }
+        for (potential in rectsToTrack) {
+            val trackedRecognition = TrackedRecognition()
+            trackedRecognition.detectionConfidence = potential.first
+            trackedRecognition.location = RectF(potential.second.getLocation())
+            trackedRecognition.title = potential.second.getTitle()
+            if (potential.second.getColor() != null) {
+                trackedRecognition.color = potential.second.getColor()
+            } else {
+                trackedRecognition.color =
+                    org.tensorflow.lite.examples.detection.tracking.MultiBoxTracker.COLORS.get(
+                        trackedObjects.size
+                    )
+            }
+            trackedObjects.add(trackedRecognition)
+            if (trackedObjects.size >= org.tensorflow.lite.examples.detection.tracking.MultiBoxTracker.COLORS.size) {
+                break
+            }
+        }
+    }
+
+    private class TrackedRecognition {
+        var location: RectF? = null
+        var detectionConfidence = 0f
+        var color = 0
+        var title: String? = null
+    }*/
 
 }
