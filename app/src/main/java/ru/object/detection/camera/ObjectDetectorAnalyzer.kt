@@ -35,8 +35,8 @@ import kotlin.collections.ArrayList
 class ObjectDetectorAnalyzer(
     private val context: Context,
     private val config: Config,
-    private val onDetectionResult: (Result,com.google.zxing.Result?,Array<IntArray>?) -> Unit
-) : ImageAnalysis.Analyzer {
+    private val onDetectionResult: (Result,com.google.zxing.Result?,Array<IntArray>?) -> Boolean
+) {
 
     companion object {
         private const val TAG = "ObjectDetectorAnalyzer"
@@ -67,21 +67,21 @@ class ObjectDetectorAnalyzer(
 
     private var scanDispose = CompositeDisposable()
 
-    override fun analyze(image: ImageProxy) {
-        val rotationDegrees = image.imageInfo.rotationDegrees
+    fun analyze(rgbBitmapimage: Bitmap) {
+        val rotationDegrees = 0
 
 
         val iteration = iterationCounter.getAndIncrement()
 
-        val rgbBitmap = getArgbBitmap(image.width, image.height)
+        //val rgbBitmap = getArgbBitmap(image.width, image.height)
 
-        yuvToRgbConverter.yuvToRgb(image, rgbBitmap)
+        //yuvToRgbConverter.yuvToRgb(image, rgbBitmap)
 
-        val transformation = getTransformation(rotationDegrees, image.width, image.height)
+        val transformation = getTransformation(rotationDegrees, rgbBitmapimage.width, rgbBitmapimage.height)
 
-        image.close()
+        //image.close()
 
-        Canvas(resizedBitmap).drawBitmap(rgbBitmap, transformation, null)
+        Canvas(resizedBitmap).drawBitmap(rgbBitmapimage, transformation, null)
 
         var handbound:Array<IntArray>? = null
 
@@ -96,19 +96,17 @@ class ObjectDetectorAnalyzer(
         }
 
         BarcodeImageScanner
-            .parse(rgbBitmap)
+            .parse(rgbBitmapimage)
             .observeOn(AndroidSchedulers.mainThread())
             .subscribe(
                 { barcoderesult ->
+                    Log.d("ANALYZER1","ANALYZER2 "+"${barcoderesult.text}")
 
 
                     ImageUtil.storePixels(resizedBitmap, inputArray)
 
                     val objects = detect(inputArray)
 
-                    if (DEBUG) {
-                        debugHelper.saveResult(iteration, resizedBitmap, objects)
-                    }
 
                     Log.d(TAG, "detection objects($iteration): $objects")
 
@@ -129,11 +127,8 @@ class ObjectDetectorAnalyzer(
 
                     val objects = detect(inputArray)
 
-                    if (DEBUG) {
-                        debugHelper.saveResult(iteration, resizedBitmap, objects)
-                    }
 
-                    Log.d(TAG, "detection objects($iteration): $objects")
+                    Log.d("ANALYZER1", "HnND")
 
                     val result = Result(
                         objects = objects,

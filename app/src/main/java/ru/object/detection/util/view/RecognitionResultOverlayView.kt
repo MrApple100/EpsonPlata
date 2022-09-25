@@ -48,7 +48,7 @@ class RecognitionResultOverlayView @JvmOverloads constructor(
     }
     private val scenery: Scenery = Scenery(context = context)
 
-    private val allLabels = DetectorUtils.loadLabelsFile(context.assets, "labelmap_face.txt")
+    private val allLabels = DetectorUtils.loadLabelsFile(context.assets, "labelmap.txt")
 
     private val allDescribes = DetectorUtils.loadLabelsFile(context.assets, "descriptionmap.txt")
 
@@ -118,8 +118,8 @@ class RecognitionResultOverlayView @JvmOverloads constructor(
     }
     var MainText:String = context.getString(R.string.Find_processor)
     private var counter =0
-    val idProcessor = allLabels[0] //
-    val idProcessorPlace = allLabels[0] //
+    val idProcessor = allLabels[8] //
+    val idProcessorPlace = allLabels[9] //
 
 
     //barcode article
@@ -239,19 +239,19 @@ class RecognitionResultOverlayView @JvmOverloads constructor(
                                 boxPaint.color = ar
                                 textPaint.color = Color.WHITE
                                 canvas.drawRect(left, top, right, bottom, boxPaint)
-                                // canvas.drawText(obj.text, left, top + 25f, textPaint)
+                                canvas.drawText(obj.text, left, top + 25f, textPaint)
                             } else if (obj.title == idProcessor) {                     //зеленым процессор который надо вставить
 
                                 boxPaint.color = ag
                                 textPaint.color = Color.WHITE
                                 canvas.drawRect(left, top, right, bottom, boxPaint)
-                                // canvas.drawText(obj.text, left, top + 25f, textPaint)
+                                canvas.drawText(obj.text, left, top + 25f, textPaint)
                             } else {
                                 boxPaint.color = ab
                                 textPaint.color = Color.WHITE
                                 if (obj.title != "click") {
                                     canvas.drawRect(left, top, right, bottom, boxPaint)
-                                    //   canvas.drawText(obj.text, left, top + 25f, textPaint)
+                                    canvas.drawText(obj.text, left, top + 25f, textPaint)
                                 }
                             }
                         }
@@ -267,7 +267,7 @@ class RecognitionResultOverlayView @JvmOverloads constructor(
                             textPaint.color = Color.WHITE
                             if (obj.title != "click") {
                                 canvas.drawRect(left, top, right, bottom, boxPaint)
-                                // canvas.drawText(obj.text, left, top + 25f, textPaint)
+                                canvas.drawText(obj.text, left, top + 25f, textPaint)
                             }
                         }
                     } else {
@@ -282,7 +282,7 @@ class RecognitionResultOverlayView @JvmOverloads constructor(
                         if (obj.title != "click") {
 
                             canvas.drawRect(left, top, right, bottom, boxPaint)
-                            //  canvas.drawText(obj.text, left, top + 25f, textPaint)
+                            canvas.drawText(obj.text, left, top + 25f, textPaint)
                         }
 
                     }
@@ -347,14 +347,14 @@ class RecognitionResultOverlayView @JvmOverloads constructor(
         canvas.drawCircle((canvas.width/2).toFloat(), (canvas.height/2).toFloat(),8f,centerPaint)
         if (objectsSetOld.contains("click")) {
 
-            canvas.drawCircle(
+            /*canvas.drawCircle(
                 ((objectsAngles.get("click")?.location?.left!! + objectsAngles.get(
                     "click"
                 )?.location?.right!!) / 2 + (-10)).toFloat(),
                 ((objectsAngles.get("click")?.location?.top!! + objectsAngles.get(
                     "click"
                 )?.location?.bottom!!) / 2 + (-10)).toFloat(), 8f, centerPaint
-            )
+            )*/
         }
 
         //работа с barcoderesult

@@ -105,8 +105,12 @@ public class MoverioCameraSampleFragment extends Activity implements CaptureStat
     private PermissionHelper mPermissionHelper = null;
     private DeviceManager mDeviceManager = null;
 
+
 //ANALYZER
-    private RecognitionResultOverlayView result_overlay = null;
+
+    private ObjectDetectorAnalyzer analyzer= null;
+
+    private static RecognitionResultOverlayView result_overlay = null;
     private Bitmap rgbBitmap = null;
     private ObjectDetectorAnalyzer.Config config = new ObjectDetectorAnalyzer.Config(
              0.5f,
@@ -118,7 +122,6 @@ public class MoverioCameraSampleFragment extends Activity implements CaptureStat
             "barcodetextTolink.txt"
 
     );
-    private ObjectDetectorAnalyzer analyzer=null;
 
 
     private Bitmap resizedBitmap = Bitmap.createBitmap(config.getInputSize(), config.getInputSize(), Bitmap.Config.ARGB_8888);
@@ -140,8 +143,12 @@ public class MoverioCameraSampleFragment extends Activity implements CaptureStat
         result_overlay.setWebView(findViewById(R.id.PDFViewer));
 
 
+
         mContext = this;
         mCameraManager = new CameraManager(mContext, this);
+
+        analyzer = new ObjectDetectorAnalyzer(mContext,config, MoverioCameraSampleFragment::onDetectionResult);
+
 
         mToggleButton_cameraOpenClose = (ToggleButton) findViewById(R.id.toggleButton_cameraOpenClose);
         mToggleButton_cameraOpenClose.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
@@ -282,14 +289,15 @@ public class MoverioCameraSampleFragment extends Activity implements CaptureStat
 try {
     ByteBuffer data = ByteBuffer.wrap(datamass);
     data.rewind();
-    Bitmap output = getArgbBitmap(mCameraDevice.getProperty().getCaptureSize()[0],mCameraDevice.getProperty().getCaptureSize()[1]);
+    Bitmap rgbBitmap = getArgbBitmap(mCameraDevice.getProperty().getCaptureSize()[0],mCameraDevice.getProperty().getCaptureSize()[1]);
+    rgbBitmap.copyPixelsFromBuffer(data);
+    analyzer.analyze(rgbBitmap);
 
-
-    output.copyPixelsFromBuffer(data);
+    /*
     Bitmap resizedBitmap = Bitmap.createBitmap(300, 300, Bitmap.Config.ARGB_8888);
 
     Matrix transformation = getTransformation(0, mCameraDevice.getProperty().getCaptureSize()[0], mCameraDevice.getProperty().getCaptureSize()[1]);
-    new Canvas(resizedBitmap).drawBitmap(output, transformation, null);
+    new Canvas(resizedBitmap).drawBitmap(rgbBitmap, transformation, null);
     int[] inputArray = new int[config.getInputSize() * config.getInputSize()];
 
     mTextView_captureState.setText("onCaptureData:1"+timestamp+",size:"+datamass.length+"");
@@ -346,7 +354,7 @@ try {
                         Log.d("Barcode", "error");
 
 
-                    }).dispose();
+                    });*/
 
 
     /*ObjectDetectorAnalyzer.Result result = new ObjectDetectorAnalyzer.Result(
@@ -367,14 +375,17 @@ try {
 
    // mTextView_captureState.setText("onCaptureData(ByteBuffer):" + datamass.length);
 }catch (Exception e){
-    //Snackbar.make(getWindow().getDecorView(), e.getLocalizedMessage(), Snackbar.LENGTH_SHORT).show();
-
+  //  Snackbar.make(getWindow().getDecorView(), e.getLocalizedMessage(), Snackbar.LENGTH_SHORT).show();
+Log.d("ERRORGLOBAL",e.getLocalizedMessage());
 
 }
     }
-    private void onDetectionResult(ObjectDetectorAnalyzer.Result result, Result barcoderesult,int[][] handbound) {
+    private static boolean onDetectionResult(ObjectDetectorAnalyzer.Result result, Result barcoderesult,int[][] handbound) {
         //Toast.makeText(this,"Hellow",Toast.LENGTH_SHORT).show();
+        Log.d("ANALYZER1", "DETECTION");
+
         result_overlay.updateResults(result,barcoderesult,handbound);
+        return true;
     }
 
     private ObjectDetector objectDetector = null;
