@@ -1,17 +1,15 @@
-package ru.`object`.detection.util
+package ru.`object`.epsoncamera.utils
 
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.ImageFormat
 import android.graphics.Rect
-import android.media.Image
 import android.renderscript.Allocation
 import android.renderscript.Element
 import android.renderscript.RenderScript
 import android.renderscript.ScriptIntrinsicYuvToRGB
 import android.renderscript.Type
 import androidx.camera.core.ImageProxy
-import org.tensorflow.lite.examples.detection.BuildConfig
 import java.nio.ByteBuffer
 
 class YuvToRgbConverter(context: Context) {
@@ -59,9 +57,9 @@ class YuvToRgbConverter(context: Context) {
     }
 
     private fun imageToByteBuffer(image: ImageProxy, outputBuffer: ByteArray) {
-        if (BuildConfig.DEBUG && image.format != ImageFormat.YUV_420_888) {
+        /*if (BuildConfig.DEBUG && image.format != ImageFormat.YUV_420_888) {
             error("Assertion failed")
-        }
+        }*/
 
         val imageCrop = image.cropRect
         val imagePlanes = image.planes

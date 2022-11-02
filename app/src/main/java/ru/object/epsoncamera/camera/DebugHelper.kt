@@ -1,9 +1,7 @@
-package ru.`object`.detection.camera
+package ru.`object`.epsoncamera.camera
 
 import android.content.Context
 import android.graphics.*
-import ru.`object`.detection.detection.DetectionResult
-import ru.`object`.detection.util.ImageUtil
 
 class DebugHelper(
         private val saveResult: Boolean,
@@ -22,7 +20,7 @@ class DebugHelper(
         style = Paint.Style.STROKE
         strokeWidth = 2.0f
     }
-
+/*
     fun saveResult(iteration: Int, resizedBitmap: Bitmap, result: List<DetectionResult>) {
         if (!saveResult) return
 
@@ -31,7 +29,7 @@ class DebugHelper(
             result.forEach { canvas.drawRect(it.location, boxPaint) }
         }
         ImageUtil.saveBitmap(context, resultBitmap, "input_$iteration")
-    }
+    }*/
 
 
 }

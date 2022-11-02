@@ -1,4 +1,4 @@
-package ru.`object`.detection.util
+package ru.`object`.epsoncamera.utils
 
 import android.content.Context
 import android.graphics.Bitmap

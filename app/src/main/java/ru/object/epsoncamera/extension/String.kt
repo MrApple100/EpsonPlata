@@ -1,4 +1,4 @@
-package ru.`object`.detection.extension
+package ru.`object`.epsoncamera.extension
 
 import android.provider.ContactsContract
 import dev.turingcomplete.kotlinonetimepassword.HmacAlgorithm

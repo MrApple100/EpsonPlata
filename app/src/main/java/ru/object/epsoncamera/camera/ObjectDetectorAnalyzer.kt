@@ -67,6 +67,13 @@ class ObjectDetectorAnalyzer(
 
     private var scanDispose = CompositeDisposable()
 
+    private var handbound:Array<IntArray>? = null
+    private var pixelRaster:IntArray? = null
+    private var tempRaster:IntArray? = null
+
+    private var pixelRaster2D: Array<IntArray>? = null
+    private var tempRaster2D: Array<IntArray>? = null
+
     fun analyze(rgbBitmapimage: Bitmap) {
         val rotationDegrees = 0
 
@@ -83,7 +90,7 @@ class ObjectDetectorAnalyzer(
 
         Canvas(resizedBitmap).drawBitmap(rgbBitmapimage, transformation, null)
 
-        var handbound:Array<IntArray>? = null
+
 
         runBlocking {
             coroutineScope {
@@ -212,17 +219,17 @@ class ObjectDetectorAnalyzer(
 
         val height = rgbBitmap.height
         val width = rgbBitmap.width
-        var pixelRaster = IntArray( width * height)//pixel raster for initial cam image
-        var tempRaster = IntArray(width * height)
+        pixelRaster = IntArray( width * height)//pixel raster for initial cam image
+        tempRaster = IntArray(width * height)
         //Initialize rasters
         //Initialize rasters
 
-        ImageUtil.storePixels(resizedBitmap, pixelRaster)
-        ImageUtil.storePixels(resizedBitmap, tempRaster)
+        ImageUtil.storePixels(resizedBitmap, pixelRaster!!)
+        ImageUtil.storePixels(resizedBitmap, tempRaster!!)
 
-        var pixelRaster2D = Array(height) { IntArray(width)} //converting pixelRaster to 2D format to check for surrounding pixels
+        pixelRaster2D = Array(height) { IntArray(width)} //converting pixelRaster to 2D format to check for surrounding pixels
 
-        var tempRaster2D = Array(height) { IntArray(width) } //temp raster for initial image
+        tempRaster2D = Array(height) { IntArray(width) } //temp raster for initial image
 
         val densityRaster = Array(height) { IntArray(width) } //raster for density
 
@@ -236,8 +243,8 @@ class ObjectDetectorAnalyzer(
         for (i in 0 until height) {
             var j = 0
             while (j < width) {
-                tempRaster2D[i][j] = pixelRaster[index]
-                val color: IntArray = hexToRGB(pixelRaster.get(index))!! //convert hex arbg integer to RGB array
+                tempRaster2D!![i][j] = pixelRaster!![index]
+                val color: IntArray = hexToRGB(pixelRaster!!.get(index))!! //convert hex arbg integer to RGB array
                 val hsb = FloatArray(3) // HSB array
                 RGBtoHSB(color[0], color[1], color[2], hsb) //convert RGB to HSB array
 
@@ -245,9 +252,9 @@ class ObjectDetectorAnalyzer(
                 // It will only find skin pixels within smaller section compared to loose pixel rule
                 // This will help avoid impurities in the detection
                 if (strictSkinPixelRule(hsb)) {
-                    pixelRaster2D[i][j] = 1 //if found turn pixel white in the 2D array
+                    pixelRaster2D!![i][j] = 1 //if found turn pixel white in the 2D array
                 } else {
-                    pixelRaster2D[i][j] = 0 //else turn pixel black in the 2D array
+                    pixelRaster2D!![i][j] = 0 //else turn pixel black in the 2D array
                 }
                 j++
                 index++
@@ -261,7 +268,7 @@ class ObjectDetectorAnalyzer(
             for (row in 0 until width) {
 
                 //IF pixel is white
-                if (pixelRaster2D[col][row] == 1) {
+                if (pixelRaster2D!![col][row] == 1) {
 
                     //calculate pixel boundary (needed if the pixel is near the edges)
                     val max = 10
@@ -273,7 +280,7 @@ class ObjectDetectorAnalyzer(
                     //Run through pixels all pixels, at max 10 pixels away from this pixel in a square shape
                     for (i in lowY..highY) {
                         for (j in lowX..highX) {
-                            if (pixelRaster2D[i][j] == 1) {
+                            if (pixelRaster2D!![i][j] == 1) {
                                 //both work, but i feel like densityRaster[col][row] is a little better
                                 densityRaster[i][j]++
                                 //densityRaster[col][row]++; //update desnity of  if pixel found is white
@@ -298,11 +305,11 @@ class ObjectDetectorAnalyzer(
         //Now we can use that initial pass to find the general location of the hand in the image
         for (col in 0 until height) {
             for (row in 0 until width) {
-                pixelRaster2D[col][row] = 0 //make pixel black, since it should not be based upon the density raster
+                pixelRaster2D!![col][row] = 0 //make pixel black, since it should not be based upon the density raster
 
                 //if density at this pixel is greater then 60
                 if (densityRaster[col][row] > 60) {
-                    pixelRaster2D[col][row] = 1 //turn this pixel white
+                    pixelRaster2D!![col][row] = 1 //turn this pixel white
                     var intersects = false //check if any rectangles intersect with the one about to be created
                     val rect = Rectangle()
                     rect.x = row - 7
@@ -339,7 +346,7 @@ class ObjectDetectorAnalyzer(
         if(maxY==10000) maxY=0
 
 
-        return pixelRaster2D
+        return pixelRaster2D!!
     }
 
     fun strictSkinPixelRule(hsb: FloatArray): Boolean {

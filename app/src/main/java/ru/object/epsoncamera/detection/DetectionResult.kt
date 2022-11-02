@@ -1,4 +1,4 @@
-package ru.`object`.detection.detection
+package ru.`object`.epsoncamera.detection
 
 import android.graphics.RectF
 

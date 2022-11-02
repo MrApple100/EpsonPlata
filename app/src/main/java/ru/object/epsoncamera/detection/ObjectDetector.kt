@@ -1,9 +1,9 @@
-package ru.`object`.detection.detection
+package ru.`object`.epsoncamera.detection
 
 import android.content.res.AssetManager
 import android.graphics.RectF
 import org.tensorflow.lite.Interpreter
-import ru.`object`.detection.util.DetectorUtils
+import ru.`object`.epsoncamera.utils.DetectorUtils
 import java.nio.ByteBuffer
 
 class ObjectDetector constructor(

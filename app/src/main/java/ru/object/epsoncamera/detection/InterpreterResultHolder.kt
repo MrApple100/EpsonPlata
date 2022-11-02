@@ -1,4 +1,4 @@
-package ru.`object`.detection.detection
+package ru.`object`.epsoncamera.detection
 
 class InterpreterResultHolder(val detections: Int) {
 

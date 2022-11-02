@@ -1,4 +1,4 @@
-package ru.`object`.detection.extension
+package ru.`object`.epsoncamera.extension
 
 import android.annotation.SuppressLint
 import android.view.View
