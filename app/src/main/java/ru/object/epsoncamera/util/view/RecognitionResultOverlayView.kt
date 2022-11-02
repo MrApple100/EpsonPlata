@@ -1,6 +1,5 @@
-package ru.`object`.detection.util.view
+package ru.`object`.epsoncamera.util.view
 
-import android.R.attr
 import android.content.Context
 import android.graphics.*
 import android.util.AttributeSet
@@ -13,9 +12,9 @@ import android.widget.TextView
 import android.widget.Toast
 import com.google.zxing.Result
 import org.tensorflow.lite.examples.detection.R
-import ru.`object`.detection.camera.ObjectDetectorAnalyzer
-import ru.`object`.detection.detection.DetectionResult
-import ru.`object`.detection.util.DetectorUtils
+import ru.`object`.epsoncamera.camera.ObjectDetectorAnalyzer
+import ru.`object`.epsoncamera.detection.DetectionResult
+import ru.`object`.epsoncamera.utils.DetectorUtils
 import java.util.*
 
 
@@ -110,7 +109,19 @@ class RecognitionResultOverlayView @JvmOverloads constructor(
     private var intArray = IntArray(300 * 800)
 
 
-    fun updateResults(result: ObjectDetectorAnalyzer.Result, barcoderesult: Result?,handbound:Array<IntArray>?) {
+    fun updateResults(result: ObjectDetectorAnalyzer.Result, barcoderesult: Result?,handbound:Array<IntArray>?,isDark:Boolean) {
+        if(isDark){
+            hidePdfOnPage()
+            scenery.reset()
+            this.result = null
+            this.barcoderesult  = null
+            this.handbound = null
+            FirstUp = false
+            FirstBottom = false
+            time = 0
+            handboundVsplesk = FloatArray(300) { 0.0f }
+            intArray = IntArray(300 * 800)
+        }
         this.result = result
         this.barcoderesult =  barcoderesult
         this.handbound = handbound
@@ -286,21 +297,9 @@ class RecognitionResultOverlayView @JvmOverloads constructor(
                         }
 
                     }
-                    //Проверять только тогда когда клик есть на сцене
-                    // if (objectsSetOld.contains("click")) {
-                    //Совпадение середины клика с элементом
-                    /*if (checkPointInRect(
-                            left,
-                            top,
-                            right,
-                            bottom,
-                            ((objectsAngles.get("click")?.location?.left!! + objectsAngles.get(
-                                "click"
-                            )?.location?.right!!) / 2+(-10)).toFloat(),
-                            ((objectsAngles.get("click")?.location?.top!! + objectsAngles.get(
-                                "click"
-                            )?.location?.bottom!!) / 2 +(-10)).toFloat()
-                        ))*/
+                    //Очищаем каждый раз описание всправа
+                    listDescriptionOnDisplay.clear()
+                    //выводим инфу в вправую область
                     if (checkPointInRect(
                             left,
                             top,
@@ -310,9 +309,7 @@ class RecognitionResultOverlayView @JvmOverloads constructor(
                             (canvas.height/ 2).toFloat()
                         )
                     ) {
-                        listDescriptionOnDisplay.clear()
                         listDescriptionOnDisplay.add(listObjectForDescribe.get(obj.title)!!)
-
                     }
                     // }
 
@@ -330,6 +327,7 @@ class RecognitionResultOverlayView @JvmOverloads constructor(
 
 
         }
+        //Свернули описание справа
         if(textView!=null){
             if(listDescriptionOnDisplay.size>0){
                 textView.text = Arrays.toString(listDescriptionOnDisplay.toArray())
@@ -338,24 +336,16 @@ class RecognitionResultOverlayView @JvmOverloads constructor(
                 textView.visibility = INVISIBLE
             }
         }
+
+        //Вывод подсказки внизу
         canvas.drawText(
             MainText,
             canvas.width / 2 - 100f,
             canvas.height - 25f,
             MaintextPaint
         )
+        //Показ точки по середине
         canvas.drawCircle((canvas.width/2).toFloat(), (canvas.height/2).toFloat(),8f,centerPaint)
-        if (objectsSetOld.contains("click")) {
-
-            /*canvas.drawCircle(
-                ((objectsAngles.get("click")?.location?.left!! + objectsAngles.get(
-                    "click"
-                )?.location?.right!!) / 2 + (-10)).toFloat(),
-                ((objectsAngles.get("click")?.location?.top!! + objectsAngles.get(
-                    "click"
-                )?.location?.bottom!!) / 2 + (-10)).toFloat(), 8f, centerPaint
-            )*/
-        }
 
         //работа с barcoderesult
         if(barcoderesult!=null) {
@@ -497,6 +487,10 @@ class RecognitionResultOverlayView @JvmOverloads constructor(
         webView.scrollY = currentY
 
     }
+    private fun hidePdfOnPage(){
+        webView.visibility = INVISIBLE
+    }
+
 
 
 
