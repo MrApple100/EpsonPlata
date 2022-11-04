@@ -14,7 +14,7 @@ import io.reactivex.schedulers.Schedulers
 object BarcodeImageScanner {
     private var bitmapBuffer: IntArray? = null
 
-    suspend fun parse(image: Bitmap): Single<Result> {
+    fun parse(image: Bitmap): Single<Result> {
         return Single
             .create<Result> { emitter ->
                 parse(image, emitter)
