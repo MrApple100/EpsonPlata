@@ -43,11 +43,18 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.Vector;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
+import kotlinx.coroutines.CoroutineContextKt;
+import kotlinx.coroutines.CoroutineScopeKt;
+import kotlinx.coroutines.ExecutorCoroutineDispatcher;
+import kotlinx.coroutines.flow.MutableStateFlow;
 import ru.object.epsoncamera.camera.ObjectDetectorAnalyzer;
 import ru.object.epsoncamera.detection.DetectionResult;
 import ru.object.epsoncamera.detection.ObjectDetector;
 import ru.object.epsoncamera.util.view.RecognitionResultOverlayView;
+import ru.object.epsoncamera.util.view.Scenery;
 import ru.object.epsoncamera.utils.ImageUtil;
 
 public class MoverioCameraSampleFragment extends Activity implements CaptureStateCallback2, CaptureDataCallback, CaptureDataCallback2, PermissionGrantResultCallback, HeadsetStateCallback {
@@ -122,6 +129,7 @@ public class MoverioCameraSampleFragment extends Activity implements CaptureStat
 
         mContext = this;
         mCameraManager = new CameraManager(mContext, this);
+
 
         analyzer = ObjectDetectorAnalyzer.Companion.getInstance(mContext, config, MoverioCameraSampleFragment::onDetectionResult);
 
@@ -266,108 +274,37 @@ public class MoverioCameraSampleFragment extends Activity implements CaptureStat
 
     private Handler uiHandler =new Handler(Looper.getMainLooper());
 
+    ExecutorService threadToDATA = Executors.newSingleThreadExecutor();
+
 
     @Override
     public void onCaptureData(long timestamp, byte[] datamass) {
         mCalcurationRate_framerate.updata();
 try {
+    ObjectDetectorAnalyzer.Companion.getDatamass().setValue(datamass);
 
-    analyzer.analyze(datamass,mCameraDevice.getProperty().getCaptureSize()[0],mCameraDevice.getProperty().getCaptureSize()[1]);
-
-    /*
-    Bitmap resizedBitmap = Bitmap.createBitmap(300, 300, Bitmap.Config.ARGB_8888);
-
-    Matrix transformation = getTransformation(0, mCameraDevice.getProperty().getCaptureSize()[0], mCameraDevice.getProperty().getCaptureSize()[1]);
-    new Canvas(resizedBitmap).drawBitmap(rgbBitmap, transformation, null);
-    int[] inputArray = new int[config.getInputSize() * config.getInputSize()];
-
-    mTextView_captureState.setText("onCaptureData:1"+timestamp+",size:"+datamass.length+"");
-
-
-    final int[][][] handbound = {null};
-
-    new Thread(new Runnable() {
-        @Override
-        public void run() {
-            try {
-                handbound[0] = findhand(resizedBitmap);
-            }catch(Exception ex){
-
+    threadToDATA.execute(new Runnable() {
+            @Override
+            public void run() {
+                if (ObjectDetectorAnalyzer.Companion.getDatamass().getValue().length > 0)
+                    analyzer.analyze(ObjectDetectorAnalyzer.Companion.getDatamass().getValue(), mCameraDevice.getProperty().getCaptureSize()[0], mCameraDevice.getProperty().getCaptureSize()[1]);
             }
-        }
-    });
-    int rotationDegrees = 0;
-
-    BarcodeImageScanner.INSTANCE
-            .parse(rgbBitmap)
-            .observeOn(AndroidSchedulers.mainThread())
-            .subscribe(
-                    (barcoderesult) -> {
-
-                        ImageUtil.INSTANCE.storePixels(resizedBitmap, inputArray);
-                        List<DetectionResult> objects = detect(inputArray);
-                        Log.d(TAG, "detection objects($iteration): $objects");
-
-                        ObjectDetectorAnalyzer.Result result = new ObjectDetectorAnalyzer.Result(objects, config.getInputSize(), config.getInputSize(), rotationDegrees);
-                        uiHandler.post(new Runnable() {
-                            @Override
-                            public void run() {
-                                onDetectionResult(result, barcoderesult, handbound[0]);
-                            }
-                        });
-
-                    } ,
-                    t -> {
-
-                        ImageUtil.INSTANCE.storePixels(resizedBitmap, inputArray);
-                        List<DetectionResult> objects = detect(inputArray);
+        });
 
 
-                        Log.d(TAG, "detection objects($iteration): $objects");
 
-                        ObjectDetectorAnalyzer.Result result = new ObjectDetectorAnalyzer.Result(objects, config.getInputSize(), config.getInputSize(), rotationDegrees);
-                        uiHandler.post(new Runnable() {
-                            @Override
-                            public void run() {
-                                onDetectionResult(result, null, handbound[0]);
-                            }
-                        });
-                        Log.d("Barcode", "error");
-
-
-                    });*/
-
-
-    /*ObjectDetectorAnalyzer.Result result = new ObjectDetectorAnalyzer.Result(
-            objects,
-            config.getInputSize(),
-            config.getInputSize(),
-            0
-    );
-
-
-    uiHandler.post(new Runnable() {
-        @Override
-        public void run() {
-            onDetectionResult(result);
-
-        }
-    });*/
-
-   // mTextView_captureState.setText("onCaptureData(ByteBuffer):" + datamass.length);
 }catch (Exception e){
-  //  Snackbar.make(getWindow().getDecorView(), e.getLocalizedMessage(), Snackbar.LENGTH_SHORT).show();
 Log.d("ERRORGLOBAL",e.getLocalizedMessage());
 
 }
 
     }
 
-    private static boolean onDetectionResult(ObjectDetectorAnalyzer.Result result, Result barcoderesult,int[][] handbound,boolean isDark) {
+    private static boolean onDetectionResult(ObjectDetectorAnalyzer.Result result, Result barcoderesult, int[][] handbound, boolean isDark, Scenery scenery) {
         //Toast.makeText(this,"Hellow",Toast.LENGTH_SHORT).show();
         //Toast.makeText(mContext,"onDetectionResult",Toast.LENGTH_SHORT).show();
 Log.d("onDetectionResult","WORK");
-        result_overlay.updateResults(result,barcoderesult,handbound,isDark);
+        result_overlay.updateResults(result,barcoderesult,handbound,isDark,scenery);
         return true;
     }
 
