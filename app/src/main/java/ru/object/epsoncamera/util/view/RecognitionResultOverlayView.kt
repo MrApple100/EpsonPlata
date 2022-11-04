@@ -32,7 +32,7 @@ class RecognitionResultOverlayView @JvmOverloads constructor(
     var ar: Int = Color.argb(alphaColor, 255, 0, 0)
     var ag: Int = Color.argb(alphaColor, 0, 255, 0)
     var ab: Int = Color.argb(alphaColor, 0, 0, 255)
-    var halfdark: Int = Color.argb(70, 0, 0, 0)
+    var halfdark: Int = Color.argb(120, 0, 0, 0)
 
 
     private var objectsDetectedOld = HashMap<String,Int>()
