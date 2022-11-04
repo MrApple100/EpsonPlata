@@ -6,4 +6,7 @@
     <string name="Find_processor">Найдите процессор</string>
     <string name="Insert_to_place">Вставьте процессор в плату</string>
     <string name="Congratulation">Успешно выполнено</string>
+    <string name="RecognizeColor">Определение цвета</string>
+    <string name="MayStart">Можно начинать</string>
+    <string name="WorkWithBarcode">Работа с баркодом</string>
 </resources>
