@@ -15,6 +15,7 @@
 4) Высвечивание информации после сканирования QR-кода.
 5) Управление пролистыванием стриниц с помощью свайпа руки перед камерой.
 
+[Ссылка на демонстрацию работоспобности](https://disk.yandex.ru/i/E1mCz8ZUZmvwRQ) 
 
 Настройка:
 Official android object detection [guide](https://www.tensorflow.org/lite/models/object_detection/overview)
