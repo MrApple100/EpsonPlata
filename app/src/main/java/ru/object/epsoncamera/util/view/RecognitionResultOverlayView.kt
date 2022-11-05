@@ -125,6 +125,15 @@ class RecognitionResultOverlayView @JvmOverloads constructor(
     var webViewheight = 4000;
 
     fun updateResults(result: ObjectDetectorAnalyzer.Result, barcoderesult: Result?,handbound:Array<IntArray>?,isDark:Boolean,scenery: Scenery) {
+
+        scaleFactorX = measuredWidth / result.imageWidth.toFloat()
+        scaleFactorY = measuredHeight / result.imageHeight.toFloat()
+        // Log.d("SECSEC2","1")
+        // Log.d("SECSEC2","1"+scenery.now.name)
+        this.scenery = scenery
+        this.result = result
+        this.barcoderesult =  barcoderesult
+        this.handbound = handbound
         if(isDark){
             hidePdfOnPage()
             this.result = null
@@ -140,14 +149,6 @@ class RecognitionResultOverlayView @JvmOverloads constructor(
             scenery.now = Scenery.ScennaryItem.SettingHand
             sec.value = 0
         }
-        scaleFactorX = measuredWidth / result.imageWidth.toFloat()
-        scaleFactorY = measuredHeight / result.imageHeight.toFloat()
-        // Log.d("SECSEC2","1")
-        // Log.d("SECSEC2","1"+scenery.now.name)
-        this.scenery = scenery
-        this.result = result
-        this.barcoderesult =  barcoderesult
-        this.handbound = handbound
         invalidate()
     }
     var MainText:String = context.getString(R.string.Find_processor)

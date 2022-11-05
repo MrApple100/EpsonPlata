@@ -12,16 +12,14 @@ import com.google.zxing.Result
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.rxkotlin.addTo
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.ExecutorCoroutineDispatcher
+import kotlinx.coroutines.*
+import kotlinx.coroutines.Dispatchers.Main
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.conflate
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.runBlocking
 import ru.`object`.epsoncamera.detection.DetectionResult
 import ru.`object`.epsoncamera.detection.ObjectDetector
 import ru.`object`.epsoncamera.usecase.BarcodeImageScanner
@@ -103,7 +101,7 @@ class  ObjectDetectorAnalyzer  private constructor (
 
 
 
-    fun analyze(datamass:ByteArray,width:Int,height:Int) {
+    fun analyze(datamass:ByteArray,width:Int,height:Int) = runBlocking(Dispatchers.IO) {
             val data = ByteBuffer.wrap(datamass)
             data.rewind()
             val rgbBitmapimage = getArgbBitmap(width, height)
@@ -122,24 +120,29 @@ class  ObjectDetectorAnalyzer  private constructor (
 
             myRGBpictureflow.value = rgbBitmapimage
 
+
             if (myRGBpictureflow.value != null)
                 Canvas(myResize.value).drawBitmap(myRGBpictureflow.value!!, transformation, null)
-
+        launch {
             if (scenery.value.now == Scenery.ScennaryItem.SettingHand)
                 myMinMaxColorsflow.value = recognizeColorInCenter(myResize.value)
-
+        }
+        launch {
             myDarkflow.value = DarkReset(myResize.value)
-
+        }
+        launch {
             myhandboundflow.value = findhand(myResize.value)
+        }
 
-
-        try {
-            if (myRGBpictureflow.value != null) {
-                barcoderesultflow.value = BarcodeImageScanner.tryParse(myRGBpictureflow.value!!)
-                Log.d("BARCODE", barcoderesultflow.value!!.text)
+        launch {
+            try {
+                if (myRGBpictureflow.value != null) {
+                    barcoderesultflow.value = BarcodeImageScanner.tryParse(myRGBpictureflow.value!!)
+                    Log.d("BARCODE", barcoderesultflow.value!!.text)
+                }
+            } catch (ex: Exception) {
+                Log.d("BARCODE", ex.stackTraceToString())
             }
-        }catch(ex:Exception){
-            Log.d("BARCODE",ex.stackTraceToString())
         }
                     /*BarcodeImageScanner
                         .parse(myRGBpictureflow.value!!)
@@ -159,22 +162,26 @@ class  ObjectDetectorAnalyzer  private constructor (
 */
 
 
-
-            threadToDetect.execute {
+       // uiHandler.post {
+                // threadToDetect.execute {
                 ImageUtil.storePixels(myResize.value, inputArray)
                 objectsflow.value = detect(inputArray)
-            }
+                // }
+           // }
 
 
             //Log.d(TAG, "detection objects($iteration): $objects")
-
-            val result = Result(
-                objects = objectsflow.value,
-                imageWidth = config.inputSize,
-                imageHeight = config.inputSize,
-                imageRotationDegrees = 0
-            )
-
+                val result = Result(
+                    objects = objectsflow.value,
+                    imageWidth = config.inputSize,
+                    imageHeight = config.inputSize,
+                    imageRotationDegrees = 0
+                )
+            if(myDarkflow.value){
+                barcoderesultflow.value = null
+                myhandboundflow.value = arrayOf()
+                scenery.value.now = Scenery.ScennaryItem.SettingHand
+            }
             uiHandler.post {
                 onDetectionResult.invoke(
                     result,
@@ -184,7 +191,8 @@ class  ObjectDetectorAnalyzer  private constructor (
                     scenery.value
                 )
             }
-            Log.d("COLORCOLOR","End")
+
+            Log.d("COLORCOLOR", "End")
 
 
 
@@ -283,12 +291,12 @@ class  ObjectDetectorAnalyzer  private constructor (
                 index++
             }
         }
-        Log.d("DARKDARK","NowDark "+howdark.toFloat()/(width * height))
+     //   Log.d("DARKDARK","NowDark "+howdark.toFloat()/(width * height))
 
         return howdark>(width * height)/100*95
     }
     fun DarkRule(hsb: FloatArray): Boolean {
-        Log.d("DARK",hsb[2].toString())
+      //  Log.d("DARK",hsb[2].toString())
         return  hsb[2] <0.04f
     }
     private fun recognizeColorInCenter(rgbBitmap: Bitmap): Array<Float> {
@@ -470,15 +478,15 @@ class  ObjectDetectorAnalyzer  private constructor (
         if(maxX==10000) maxX=0
         if(minY==-10000) minY=0
         if(maxY==10000) maxY=0
-*/
 
+*/
 
         return pixelRaster2D!!
     }
 
     fun strictSkinPixelRule(hsb: FloatArray): Boolean {
         //Log.d("handbound",("${hsb[0]}  ${hsb[1]} ${hsb[2]}").toString())
-        return hsb[0] < myMinMaxColorsflow.value!![1] && hsb[1] > myMinMaxColorsflow.value!![2] && hsb[1] < myMinMaxColorsflow.value!![3] && hsb[2] >myMinMaxColorsflow.value!![4]
+        return hsb[0] < myMinMaxColorsflow.value!![1]*0.8f && hsb[1]*0.8f > myMinMaxColorsflow.value!![2] && hsb[1] < myMinMaxColorsflow.value!![3]*0.8f && hsb[2]*0.8f >myMinMaxColorsflow.value!![4]
     }
     fun looseSkinPixelRule(hsb: FloatArray): Boolean {
         return hsb[0] < 0.4f && hsb[1] < 1f && hsb[2] < 0.7f

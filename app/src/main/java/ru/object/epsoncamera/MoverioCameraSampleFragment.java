@@ -41,6 +41,7 @@ import org.tensorflow.lite.examples.detection.R;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Vector;
 import java.util.concurrent.ExecutorService;
@@ -98,7 +99,7 @@ public class MoverioCameraSampleFragment extends Activity implements CaptureStat
     private Bitmap rgbBitmap = null;
     private ObjectDetectorAnalyzer.Config config = new ObjectDetectorAnalyzer.Config(
              0.5f,
-            10,
+            10, //ругается если больше 10
             300,
             true,
             "model_q.tflite",
@@ -275,19 +276,25 @@ public class MoverioCameraSampleFragment extends Activity implements CaptureStat
     private Handler uiHandler =new Handler(Looper.getMainLooper());
 
     ExecutorService threadToDATA = Executors.newSingleThreadExecutor();
+    ExecutorService threadEnterDATA = Executors.newSingleThreadExecutor();
 
 
     @Override
     public void onCaptureData(long timestamp, byte[] datamass) {
         mCalcurationRate_framerate.updata();
 try {
+
     ObjectDetectorAnalyzer.Companion.getDatamass().setValue(datamass);
 
     threadToDATA.execute(new Runnable() {
             @Override
             public void run() {
-                if (ObjectDetectorAnalyzer.Companion.getDatamass().getValue().length > 0)
-                    analyzer.analyze(ObjectDetectorAnalyzer.Companion.getDatamass().getValue(), mCameraDevice.getProperty().getCaptureSize()[0], mCameraDevice.getProperty().getCaptureSize()[1]);
+                try {
+                    if (ObjectDetectorAnalyzer.Companion.getDatamass().getValue().length > 0)
+                        analyzer.analyze(ObjectDetectorAnalyzer.Companion.getDatamass().getValue(), mCameraDevice.getProperty().getCaptureSize()[0], mCameraDevice.getProperty().getCaptureSize()[1]);
+                }catch(Exception ex){
+                    System.out.println(Arrays.toString(ex.getStackTrace()));
+                }
             }
         });
 
