@@ -17,6 +17,9 @@
 
 [Ссылка на демонстрацию работоспобности](https://disk.yandex.ru/i/E1mCz8ZUZmvwRQ) 
 
+![штрихкод](https://user-images.githubusercontent.com/69810254/200172383-2aa5f601-701e-4ab9-a401-088fdd19987d.jpg)
+
+
 Настройка:
 Official android object detection [guide](https://www.tensorflow.org/lite/models/object_detection/overview)
  rewritten using kotlin, CameraX and with more readable code
