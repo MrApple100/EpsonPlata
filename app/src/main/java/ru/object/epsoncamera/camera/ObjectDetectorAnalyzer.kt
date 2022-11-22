@@ -70,8 +70,7 @@ class  ObjectDetectorAnalyzer  private constructor (
     private val yuvToRgbConverter = YuvToRgbConverter(context)
 
     private val uiHandler = Handler(Looper.getMainLooper())
-    private val threadToDetect = Executors.newSingleThreadExecutor()
-    private val threadToOther = Executors.newSingleThreadExecutor()
+
 
 
     private var inputArray = IntArray(config.inputSize * config.inputSize)
@@ -87,7 +86,6 @@ class  ObjectDetectorAnalyzer  private constructor (
     private var handbound:Array<IntArray>? = null
 
 
-    private var myflow = emptyFlow<Bitmap>()
     private var myResize = MutableStateFlow<Bitmap>(Bitmap.createBitmap(config.inputSize, config.inputSize, Bitmap.Config.ARGB_8888))
     private var myDarkflow = MutableStateFlow<Boolean>(false)
     private var myhandboundflow = MutableStateFlow<Array<IntArray>>(arrayOf())
@@ -124,11 +122,25 @@ class  ObjectDetectorAnalyzer  private constructor (
             if (myRGBpictureflow.value != null)
                 Canvas(myResize.value).drawBitmap(myRGBpictureflow.value!!, transformation, null)
         launch {
-            if (scenery.value.now == Scenery.ScennaryItem.SettingHand)
+            if (scenery.value.now == Scenery.ScennaryItem.SettingHand) {
                 myMinMaxColorsflow.value = recognizeColorInCenter(myResize.value)
+                delay(500);
+            }
+
         }
         launch {
             myDarkflow.value = DarkReset(myResize.value)
+            delay(1000)
+        }
+        launch{
+            if(myDarkflow.value ){
+                delay(2000)
+                if(DarkReset(myResize.value)){
+                        scenery.value.now = Scenery.ScennaryItem.SettingHand
+                        Log.d("COLORCOLOR4","SH")
+                }
+            }
+           // delay(1000)
         }
         launch {
             myhandboundflow.value = findhand(myResize.value)
@@ -180,7 +192,7 @@ class  ObjectDetectorAnalyzer  private constructor (
             if(myDarkflow.value){
                 barcoderesultflow.value = null
                 myhandboundflow.value = arrayOf()
-                scenery.value.now = Scenery.ScennaryItem.SettingHand
+              //  scenery.value.now = Scenery.ScennaryItem.SettingHand
             }
             uiHandler.post {
                 onDetectionResult.invoke(
@@ -192,7 +204,7 @@ class  ObjectDetectorAnalyzer  private constructor (
                 )
             }
 
-            Log.d("COLORCOLOR", "End")
+                // Log.d("COLORCOLOR", "End")
 
 
 
@@ -302,22 +314,28 @@ class  ObjectDetectorAnalyzer  private constructor (
     private fun recognizeColorInCenter(rgbBitmap: Bitmap): Array<Float> {
         val height = rgbBitmap.height
         val width = rgbBitmap.width
-        var tempRaster = IntArray(width / 4 * height / 2)
+        var tempRasterFull = IntArray(width * height)
+        var tempRaster = mutableListOf<Int>(width / 4 * height / 2)
         try {
-            rgbBitmap.getPixels(
-                tempRaster,
-                0,
-                width / 4,
-                width / 8 * 3,
-                height / 4,
-                width / 4,
-                height / 2
-            )
+
+            rgbBitmap.getPixels(tempRasterFull, 0, width, 0, 0, width, height)
+            for(j in height/4 until height/4*3){
+                for(i in width/8*3 until width/8*5){
+                    tempRaster.add(tempRasterFull[i*j+j])
+                }
+            }
         } catch (exeption: Exception) {
             Log.d("COLORCOLOR2", exeption.stackTraceToString())
         }
-        // Log.d("COLORCOLOR3", tempRaster.size.toString())
+         Log.d("COLORCOLOR3", tempRaster.size.toString())
 
+        var av1 = 0f;
+        var av2 = 0f;
+        var av3 = 0f;
+
+        var av1c = 0;
+        var av2c = 0;
+        var av3c = 0;
 
         var min1 = 1f;
         var max1 = 0f;
@@ -325,9 +343,15 @@ class  ObjectDetectorAnalyzer  private constructor (
         var max2 = 0f;
         var min3 = 1f;
         var max3 = 0f;
-        for (index in 0..tempRaster.size/2) {
-            val color: IntArray =
-                hexToRGB(tempRaster!!.get(index))!! //convert hex arbg integer to RGB array
+
+        var min1c = 255;
+        var max1c = 0;
+        var min2c = 255;
+        var max2c = 0;
+        var min3c = 255;
+        var max3c = 0;
+        for (index in 0 until tempRaster.size) {
+            val color: IntArray = hexToRGB(tempRaster!![index])!! //convert hex arbg integer to RGB array
 
             val hsb = FloatArray(3) // HSB array
             RGBtoHSB(color[0], color[1], color[2], hsb)
@@ -341,12 +365,45 @@ class  ObjectDetectorAnalyzer  private constructor (
             min3 = min3.coerceAtMost(hsb[2])
             max3 = max3.coerceAtLeast(hsb[2])
 
+            min1c = min1c.coerceAtMost (color[0])
+            max1c = max1c.coerceAtLeast(color[0])
+            min2c = min2c.coerceAtMost (color[1])
+            max2c = max2c.coerceAtLeast(color[1])
+            min3c = min3c.coerceAtMost (color[2])
+            max3c = max3c.coerceAtLeast(color[2])
+
+            // average
+            av1 += hsb[0]
+            av2 += hsb[1]
+            av3 += hsb[2]
+
+            // average
+            av1c += color[0]
+            av2c += color[1]
+            av3c += color[2]
 
         }
-        // Log.d("COLORCOLOR4", Arrays.toString(arrayOf(min1, max1, min2, max2, min3, max3)))
+        // average
+        av1 /= tempRaster.size
+        av2 /= tempRaster.size
+        av3 /= tempRaster.size
 
-        return arrayOf(min1, max1, min2, max2, min3, max3)
+        av1c /= tempRaster.size
+        av2c /= tempRaster.size
+        av3c /= tempRaster.size
+
+        Log.d("COLORCOLOR4", "----------------------------------------------------------")
+        Log.d("COLORCOLOR4", Arrays.toString(arrayOf(av1,av2,av3)))
+        Log.d("COLORCOLOR4", Arrays.toString(arrayOf(min1, max1, min2, max2, min3, max3)))
+
+        Log.d("COLORCOLOR4", Arrays.toString(arrayOf(av1c,av2c,av3c)))
+        Log.d("COLORCOLOR4", Arrays.toString(arrayOf(min1c, max1c, min2c, max2c, min3c, max3c)))
+        Log.d("COLORCOLOR4", "----------------------------------------------------------")
+
+
+        return arrayOf(av1,av2,av3)
     }
+
     private fun findhand(rgbBitmap :Bitmap): Array<IntArray> {
 
         val height = rgbBitmap.height
@@ -483,10 +540,22 @@ class  ObjectDetectorAnalyzer  private constructor (
 
         return pixelRaster2D!!
     }
-
+    val koef = 0.20f
     fun strictSkinPixelRule(hsb: FloatArray): Boolean {
         //Log.d("handbound",("${hsb[0]}  ${hsb[1]} ${hsb[2]}").toString())
-        return hsb[0] < myMinMaxColorsflow.value!![1]*0.8f && hsb[1]*0.8f > myMinMaxColorsflow.value!![2] && hsb[1] < myMinMaxColorsflow.value!![3]*0.8f && hsb[2]*0.8f >myMinMaxColorsflow.value!![4]
+        return  myMinMaxColorsflow.value!![0]-koef <hsb[0] &&
+                hsb[0] < myMinMaxColorsflow.value!![0]+koef &&
+                hsb[1] > myMinMaxColorsflow.value!![1]-koef &&
+                hsb[1] < myMinMaxColorsflow.value!![1]+koef &&
+                hsb[2] >myMinMaxColorsflow.value!![2]-koef &&
+                myMinMaxColorsflow.value!![2]+koef>hsb[2]
+        /*myMinMaxColorsflow.value!![0] <hsb[0]*koef &&
+                hsb[0] < myMinMaxColorsflow.value!![1]*koef &&
+                hsb[1]*koef > myMinMaxColorsflow.value!![2] &&
+                hsb[1] < myMinMaxColorsflow.value!![3]*koef &&
+                hsb[2]*koef >myMinMaxColorsflow.value!![4] &&
+                myMinMaxColorsflow.value!![5]*koef>hsb[2] &&*/
+
     }
     fun looseSkinPixelRule(hsb: FloatArray): Boolean {
         return hsb[0] < 0.4f && hsb[1] < 1f && hsb[2] < 0.7f

@@ -146,7 +146,7 @@ class RecognitionResultOverlayView @JvmOverloads constructor(
             intArray = IntArray(300 * 800)
 
 
-            scenery.now = Scenery.ScennaryItem.SettingHand
+           // scenery.now = Scenery.ScennaryItem.SettingHand
             sec.value = 0
         }
         invalidate()
