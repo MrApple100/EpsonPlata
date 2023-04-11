@@ -2,6 +2,7 @@ package ru.object.epsoncamera;
 
 import android.app.Activity;
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Matrix;
@@ -15,7 +16,9 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
+import android.widget.Button;
 import android.widget.CompoundButton;
+import android.widget.LinearLayout;
 import android.widget.SeekBar;
 import android.widget.Spinner;
 import android.widget.TextView;
@@ -73,14 +76,13 @@ public class MoverioCameraSampleFragment extends Activity implements CaptureStat
     private ToggleButton mToggleButton_captureStartStop = null;
     private ToggleButton mToggleButton_previewStartStop = null;
 
-    private SeekBar mSeekBar_brightness = null;
+    private SeekBar mSeekBar_brightness;
+
 
     private SurfaceView mSurfaceView_preview = null;
 
     private TextView mTextView_captureState = null;
     private Spinner mSpinner_captureInfo = null;
-
-
 
     private TextView mTextView_framerate = null;
     private CalcurationRate mCalcurationRate_framerate = null;
@@ -109,9 +111,17 @@ public class MoverioCameraSampleFragment extends Activity implements CaptureStat
     );
 
 
-    private Bitmap resizedBitmap = Bitmap.createBitmap(config.getInputSize(), config.getInputSize(), Bitmap.Config.ARGB_8888);
-
-    private Matrix matrixToInput = null;
+    private final String  KEY_H = "KEY_H";
+    private final String  KEY_S = "KEY_S";
+    private final String  KEY_V = "KEY_V";
+    private int current_H =0;
+    private int current_S =0;
+    private int current_V =0;
+    private SeekBar mSeekBar_colorH;
+    private SeekBar mSeekBar_colorS;
+    private SeekBar mSeekBar_colorV;
+    private Button bMenu;
+    private LinearLayout burgerMenu;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -181,9 +191,8 @@ public class MoverioCameraSampleFragment extends Activity implements CaptureStat
             }
         });
 
-
-
         mTextView_captureState = (TextView) findViewById(R.id.textView_captureState);
+
         mSpinner_captureInfo = (Spinner) findViewById(R.id.spinner_cpatureInfo);
         mSpinner_captureInfo.setOnTouchListener(new View.OnTouchListener() {
             @Override
@@ -232,10 +241,6 @@ public class MoverioCameraSampleFragment extends Activity implements CaptureStat
             }
         });
 
-
-
-
-
         mTextView_framerate = (TextView) findViewById(R.id.textView_framerate);
         mCalcurationRate_framerate = new CalcurationRate(mTextView_framerate);
         mCalcurationRate_framerate.start();
@@ -243,6 +248,30 @@ public class MoverioCameraSampleFragment extends Activity implements CaptureStat
         mTextView_test = (TextView) findViewById(R.id.textView_test);
 
         Toast.makeText(mContext,"Create",Toast.LENGTH_SHORT).show();
+
+        //INIT HSV CACHE
+        SharedPreferences preferences = getPreferences(MODE_PRIVATE);
+        current_H = preferences.getInt(KEY_H,0);
+        current_S = preferences.getInt(KEY_S,0);
+        current_V = preferences.getInt(KEY_V,0);
+
+        mSeekBar_colorH = (SeekBar) findViewById(R.id.seekBar_colorH);
+        mSeekBar_colorS = (SeekBar) findViewById(R.id.seekBar_colorS);
+        mSeekBar_colorV = (SeekBar) findViewById(R.id.seekBar_colorV);
+
+        //BurgerMenu
+        burgerMenu = findViewById(R.id.Iburgermenu);
+        bMenu = findViewById(R.id.Bmenu);
+        bMenu.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if(burgerMenu.getVisibility()!=View.VISIBLE)
+                    burgerMenu.setVisibility(View.VISIBLE);
+                else
+                    burgerMenu.setVisibility(View.GONE);
+            }
+        });
+
 
     }
 
