@@ -26,6 +26,7 @@ import android.widget.Toast;
 import android.widget.ToggleButton;
 
 import androidx.constraintlayout.solver.widgets.Rectangle;
+import androidx.databinding.DataBindingUtil;
 
 import com.epson.moverio.hardware.camera.CameraDevice;
 import com.epson.moverio.hardware.camera.CameraManager;
@@ -41,6 +42,8 @@ import com.google.android.material.snackbar.Snackbar;
 import com.google.zxing.Result;
 
 import org.tensorflow.lite.examples.detection.R;
+import org.tensorflow.lite.examples.detection.databinding.BurgermenuBinding;
+import org.tensorflow.lite.examples.detection.databinding.FragmentCameraBinding;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -110,6 +113,7 @@ public class MoverioCameraSampleFragment extends Activity implements CaptureStat
 
     );
 
+    private SharedPreferences preferences;
 
     private final String  KEY_H = "KEY_H";
     private final String  KEY_S = "KEY_S";
@@ -120,22 +124,32 @@ public class MoverioCameraSampleFragment extends Activity implements CaptureStat
     private SeekBar mSeekBar_colorH;
     private SeekBar mSeekBar_colorS;
     private SeekBar mSeekBar_colorV;
+    private TextView tv_colorH;
+    private TextView tv_colorS;
+    private TextView tv_colorV;
     private Button bMenu;
     private LinearLayout burgerMenu;
+    private Button bCalibrateHand;
+    private Button bCloseBurgerMenu;
+    private Button bSaveHSV;
+
+
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.fragment_camera);
+        FragmentCameraBinding binding = DataBindingUtil.setContentView(this,R.layout.fragment_camera);
+        BurgermenuBinding bindingBurgerMenu = binding.Iburgermenu;
+
 
         mPermissionHelper = new PermissionHelper(this);
         mDeviceManager = new DeviceManager(this);
 
-        result_overlay = findViewById(R.id.result_overlay2);
-        mSurfaceView_preview = (SurfaceView) findViewById(R.id.surfaceView_preview);
+        result_overlay = binding.resultOverlay2;
+        mSurfaceView_preview = binding.surfaceViewPreview;
 
-        result_overlay.setDescriptionText(findViewById(R.id.DescriptionText));
-        result_overlay.setWebView(findViewById(R.id.PDFViewer));
+        result_overlay.setDescriptionText(binding.DescriptionText);
+        result_overlay.setWebView(binding.PDFViewer);
 
 
         mContext = this;
@@ -144,8 +158,7 @@ public class MoverioCameraSampleFragment extends Activity implements CaptureStat
 
         analyzer = ObjectDetectorAnalyzer.Companion.getInstance(mContext, config, MoverioCameraSampleFragment::onDetectionResult);
 
-
-        mToggleButton_cameraOpenClose = (ToggleButton) findViewById(R.id.toggleButton_cameraOpenClose);
+        mToggleButton_cameraOpenClose = bindingBurgerMenu.toggleButtonCameraOpenClose;
         mToggleButton_cameraOpenClose.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
@@ -165,7 +178,7 @@ public class MoverioCameraSampleFragment extends Activity implements CaptureStat
                 }
             }
         });
-        mToggleButton_captureStartStop = (ToggleButton) findViewById(R.id.toggleButton_captureStartStop);
+        mToggleButton_captureStartStop = bindingBurgerMenu.toggleButtonCaptureStartStop;
         mToggleButton_captureStartStop.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
@@ -178,7 +191,7 @@ public class MoverioCameraSampleFragment extends Activity implements CaptureStat
                 }
             }
         });
-        mToggleButton_previewStartStop = (ToggleButton) findViewById(R.id.toggleButton_previewStartStop);
+        mToggleButton_previewStartStop = bindingBurgerMenu.toggleButtonPreviewStartStop;
         mToggleButton_previewStartStop.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
@@ -191,9 +204,9 @@ public class MoverioCameraSampleFragment extends Activity implements CaptureStat
             }
         });
 
-        mTextView_captureState = (TextView) findViewById(R.id.textView_captureState);
+        mTextView_captureState = binding.textViewCaptureState;
 
-        mSpinner_captureInfo = (Spinner) findViewById(R.id.spinner_cpatureInfo);
+        mSpinner_captureInfo = bindingBurgerMenu.spinnerCpatureInfo;
         mSpinner_captureInfo.setOnTouchListener(new View.OnTouchListener() {
             @Override
             public boolean onTouch(View view, MotionEvent motionEvent) {
@@ -219,7 +232,7 @@ public class MoverioCameraSampleFragment extends Activity implements CaptureStat
             }
         });
 
-        mSeekBar_brightness = (SeekBar) findViewById(R.id.seekBar_brightness);
+        mSeekBar_brightness = bindingBurgerMenu.seekBarBrightness;
         mSeekBar_brightness.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
@@ -241,27 +254,96 @@ public class MoverioCameraSampleFragment extends Activity implements CaptureStat
             }
         });
 
-        mTextView_framerate = (TextView) findViewById(R.id.textView_framerate);
+        mTextView_framerate = binding.textViewFramerate;
         mCalcurationRate_framerate = new CalcurationRate(mTextView_framerate);
         mCalcurationRate_framerate.start();
 
-        mTextView_test = (TextView) findViewById(R.id.textView_test);
+        mTextView_test = binding.textViewTest;
 
         Toast.makeText(mContext,"Create",Toast.LENGTH_SHORT).show();
 
+
+
+  ////////////BurgerMenu
+
         //INIT HSV CACHE
-        SharedPreferences preferences = getPreferences(MODE_PRIVATE);
+        preferences = getSharedPreferences(getPackageName(),MODE_PRIVATE);
         current_H = preferences.getInt(KEY_H,0);
         current_S = preferences.getInt(KEY_S,0);
         current_V = preferences.getInt(KEY_V,0);
 
-        mSeekBar_colorH = (SeekBar) findViewById(R.id.seekBar_colorH);
-        mSeekBar_colorS = (SeekBar) findViewById(R.id.seekBar_colorS);
-        mSeekBar_colorV = (SeekBar) findViewById(R.id.seekBar_colorV);
+        tv_colorH = bindingBurgerMenu.TVCurrentH;
+        tv_colorH.setText(current_H+"");
+        mSeekBar_colorH = bindingBurgerMenu.seekBarColorH;
+        mSeekBar_colorH.setProgress(current_H);
+        mSeekBar_colorH.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
 
-        //BurgerMenu
-        burgerMenu = findViewById(R.id.Iburgermenu);
-        bMenu = findViewById(R.id.Bmenu);
+                current_H = progress;
+                tv_colorH.setText(progress+"");
+            }
+
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {
+
+            }
+
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {
+
+            }
+        });
+        tv_colorS = bindingBurgerMenu.TVCurrentS;
+        tv_colorS.setText(current_S+"");
+
+        mSeekBar_colorS = bindingBurgerMenu.seekBarColorS;
+        mSeekBar_colorS.setProgress(current_S);
+
+        mSeekBar_colorS.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                current_S = progress;
+                tv_colorS.setText(progress+"");
+            }
+
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {
+
+            }
+
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {
+
+            }
+        });
+
+        tv_colorV = bindingBurgerMenu.TVCurrentV;
+        tv_colorV.setText(current_V+"");
+
+        mSeekBar_colorV = bindingBurgerMenu.seekBarColorV;
+        mSeekBar_colorV.setProgress(current_V);
+
+        mSeekBar_colorV.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                current_V = progress;
+                tv_colorV.setText(progress+"");
+
+            }
+
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {
+
+            }
+
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {
+
+            }
+        });
+        burgerMenu = bindingBurgerMenu.BurgerMenu;
+        bMenu = binding.Bmenu;
         bMenu.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -272,6 +354,43 @@ public class MoverioCameraSampleFragment extends Activity implements CaptureStat
             }
         });
 
+        bCalibrateHand = bindingBurgerMenu.toggleButtonHandpaint;
+        bCalibrateHand.setOnClickListener(new View.OnClickListener(){
+            @Override
+            public void onClick(View v) {
+
+            }
+        });
+
+        bSaveHSV = bindingBurgerMenu.SaveHSV;
+        bSaveHSV.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                SharedPreferences.Editor editor = preferences.edit();
+                editor.putInt(KEY_H,current_H);
+                editor.putInt(KEY_S,current_S);
+                editor.putInt(KEY_V,current_V);
+                editor.apply();
+                Toast.makeText(MoverioCameraSampleFragment.this, "SAVE HSV", Toast.LENGTH_SHORT).show();
+
+            }
+        });
+        bCloseBurgerMenu = bindingBurgerMenu.EndSetting;
+        bCloseBurgerMenu.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if(burgerMenu.getVisibility()!=View.VISIBLE)
+                    burgerMenu.setVisibility(View.VISIBLE);
+                else
+                    burgerMenu.setVisibility(View.GONE);            }
+        });
+
+
+
+        binding.executePendingBindings();
+        bindingBurgerMenu.executePendingBindings();
+        setContentView(binding.getRoot());
+        //setContentView(bindingBurgerMenu.getRoot());
 
     }
 

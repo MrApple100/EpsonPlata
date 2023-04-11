@@ -319,15 +319,16 @@ class RecognitionResultOverlayView @JvmOverloads constructor(
 
                                     handboundVsplesk[i] += handbound!![i][j].toFloat()
                                     intArray.set(i * j + j, handbound!![i][j] * 1200000)
-
-                                    /* if(handbound!![i][j]==1) {
+/////
+                                     if(handbound!![i][j]==1) {
                             centerPaint.color = Color.WHITE
-                            canvas.drawCircle(i.toFloat(), j.toFloat(), 3.0f, centerPaint)
+                            canvas.drawCircle(canvas.width+ i.toFloat(),canvas.height+ j.toFloat(), 3.0f, centerPaint)
                         }
                         else {
                             centerPaint.color = Color.BLACK
-                            canvas.drawCircle(i.toFloat(), j.toFloat(), 3.0f, centerPaint)
-                        }*/
+                            canvas.drawCircle(canvas.width+ i.toFloat(),canvas.height+ j.toFloat(), 3.0f, centerPaint)
+                        }
+//////
                                 }
                                 if (handboundVsplesk[i] > 0) {
                                     /*Log.d(

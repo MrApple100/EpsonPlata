@@ -1,4 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
+<layout>
+    <data>
+
+    </data>
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:orientation="vertical"
@@ -129,24 +133,13 @@
         android:layout_height="wrap_content"
         android:orientation="vertical"
         app:layout_constraintTop_toBottomOf="@+id/textView_captureState"
-
         >
-
-
 
 <!--        <SeekBar-->
 <!--            android:id="@+id/seekBar_brightness"-->
 <!--            android:layout_width="match_parent"-->
 <!--            android:layout_height="wrap_content"-->
 <!--            android:min="0" />-->
-
-
-
-
-
-
-
-
 
 
         <TextView
@@ -186,10 +179,10 @@
     <include
         android:id="@+id/Iburgermenu"
         layout="@layout/burgermenu"
-        android:visibility="gone"
         app:layout_constraintLeft_toLeftOf="parent">
 
     </include>
 
 
 </androidx.constraintlayout.widget.ConstraintLayout>
+</layout>
