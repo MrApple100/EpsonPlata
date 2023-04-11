@@ -264,9 +264,12 @@ class RecognitionResultOverlayView @JvmOverloads constructor(
                         6 -> {
                             runBlocking(Dispatchers.IO) {
                                 delay(1000)
-                                scenery!!.now = Scenery.ScennaryItem.Find
+                                scenery!!.now = Scenery.ScennaryItem.manualSettingHand
+                                sec.value=0
+
                             }
                             context.getString(R.string.MayStart)
+
 
                         }
                         else -> {
@@ -303,6 +306,37 @@ class RecognitionResultOverlayView @JvmOverloads constructor(
                     )
 
                 }
+                Scenery.ScennaryItem.manualSettingHand->{
+
+                    if (handbound != null) {
+                        for (i in 0 until handbound!!.size) {
+                            for (j in 0 until handbound!![i].size) {
+
+                                intArray.set(i * j + j, handbound!![i][j] * 1200000)
+//
+                                if(handbound!![i][j]==1) {
+                                    centerPaint.color = Color.WHITE
+                                    canvas.drawCircle(canvas.width/2+ j.toFloat(),canvas.height/2+ i.toFloat(), 3.0f, centerPaint)
+                                }
+                                else {
+                                    centerPaint.color = Color.BLACK
+                                    canvas.drawCircle(canvas.width/2+ j.toFloat(),canvas.height/2+ i.toFloat(), 3.0f, centerPaint)
+                                }
+//
+                            }
+
+                        }
+                    }
+//                    canvas.drawBitmap(
+//                        Bitmap.createBitmap(
+//                            intArray,
+//                            handbound!!.size,
+//                            handbound!![0].size,
+//                            Bitmap.Config.ARGB_8888
+//                        ), canvas.width.toFloat()/2, canvas.height.toFloat()/2, centerPaint
+//                    )
+
+                }
                 Scenery.ScennaryItem.Barcode ->{
                     textView.visibility = INVISIBLE
 
@@ -320,14 +354,14 @@ class RecognitionResultOverlayView @JvmOverloads constructor(
                                     handboundVsplesk[i] += handbound!![i][j].toFloat()
                                     intArray.set(i * j + j, handbound!![i][j] * 1200000)
 /////
-                                     if(handbound!![i][j]==1) {
-                            centerPaint.color = Color.WHITE
-                            canvas.drawCircle(canvas.width+ i.toFloat(),canvas.height+ j.toFloat(), 3.0f, centerPaint)
-                        }
-                        else {
-                            centerPaint.color = Color.BLACK
-                            canvas.drawCircle(canvas.width+ i.toFloat(),canvas.height+ j.toFloat(), 3.0f, centerPaint)
-                        }
+//                                     if(handbound!![i][j]==1) {
+//                            centerPaint.color = Color.WHITE
+//                            canvas.drawCircle(canvas.width+ i.toFloat(),canvas.height+ j.toFloat(), 3.0f, centerPaint)
+//                        }
+//                        else {
+//                            centerPaint.color = Color.BLACK
+//                            canvas.drawCircle(canvas.width+ i.toFloat(),canvas.height+ j.toFloat(), 3.0f, centerPaint)
+//                        }
 //////
                                 }
                                 if (handboundVsplesk[i] > 0) {
@@ -667,7 +701,7 @@ enum class ColorsEnum{
     magenta,red,blue,green,cyan,yellow,darkgray
 }
 class Scenery (
-    var now: ScennaryItem = ScennaryItem.SettingHand,
+    var now: ScennaryItem = ScennaryItem.Find,
     var settingHand:Boolean = false,
     var FindStep:Boolean = false,
     var InsertStep: Boolean = false,
@@ -688,7 +722,7 @@ class Scenery (
 
     }
     enum class ScennaryItem {
-        SettingHand, Find, Insert, InsertFinish,Barcode
+        SettingHand,manualSettingHand, Find, Insert, InsertFinish,Barcode
     }
 
 

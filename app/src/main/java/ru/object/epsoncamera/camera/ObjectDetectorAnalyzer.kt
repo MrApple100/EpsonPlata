@@ -16,10 +16,8 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.Dispatchers.Main
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.conflate
-import kotlinx.coroutines.flow.emptyFlow
-import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.*
+import ru.`object`.epsoncamera.MoverioCameraSampleFragment
 import ru.`object`.epsoncamera.detection.DetectionResult
 import ru.`object`.epsoncamera.detection.ObjectDetector
 import ru.`object`.epsoncamera.usecase.BarcodeImageScanner
@@ -37,7 +35,9 @@ import kotlin.collections.ArrayList
 class  ObjectDetectorAnalyzer  private constructor (
     private val context: Context,
     private val config: Config,
-    private val onDetectionResult: (Result,com.google.zxing.Result?,Array<IntArray>?,Boolean, Scenery) -> Boolean
+    private val mainActivity: MoverioCameraSampleFragment,
+    private val onDetectionResult: (Result,com.google.zxing.Result?,Array<IntArray>?,Boolean, Scenery) -> Boolean,
+//    private val setHSVPprogress:(Array<Float>) -> Unit
 ) {
 
 
@@ -50,9 +50,10 @@ class  ObjectDetectorAnalyzer  private constructor (
 
         fun  getInstance(context: Context,
                          config: Config,
+                         mainActivity: MoverioCameraSampleFragment,
                          onDetectionResult: (Result,com.google.zxing.Result?,Array<IntArray>?,Boolean, Scenery) -> Boolean,): ObjectDetectorAnalyzer {
             if (instance == null)  // NOT thread safe!
-                instance = ObjectDetectorAnalyzer(context, config, onDetectionResult,)
+                instance = ObjectDetectorAnalyzer(context, config,mainActivity, onDetectionResult,)
 
             return instance!!
         }
@@ -94,8 +95,21 @@ class  ObjectDetectorAnalyzer  private constructor (
     private var objectsflow = MutableStateFlow<List<DetectionResult>>(arrayListOf())
 
     private var myMinMaxColorsflow = MutableStateFlow<Array<Float>?>(emptyArray())
+    var myMinMaxColorsState = myMinMaxColorsflow.asStateFlow();
+
+    public fun setMinMaxColor(hsvp :Array<Float>){
+         myMinMaxColorsflow.value = hsvp
+    }
 
     private var scenery  = MutableStateFlow<Scenery>(Scenery())
+    var sceneryState = scenery.asStateFlow();
+
+
+    public fun setScenery(sceneryItem: Scenery.ScennaryItem){
+        scenery.value.now = sceneryItem
+    }
+
+
 
 
 
@@ -124,10 +138,13 @@ class  ObjectDetectorAnalyzer  private constructor (
         launch {
             if (scenery.value.now == Scenery.ScennaryItem.SettingHand) {
                 myMinMaxColorsflow.value = recognizeColorInCenter(myResize.value)
+                mainActivity.setHSVPprogress(myMinMaxColorsflow.value)
                 delay(500);
+
             }
 
         }
+
         launch {
             myDarkflow.value = DarkReset(myResize.value)
             delay(1000)
@@ -136,7 +153,7 @@ class  ObjectDetectorAnalyzer  private constructor (
             if(myDarkflow.value ){
                 delay(2000)
                 if(DarkReset(myResize.value)){
-                        scenery.value.now = Scenery.ScennaryItem.SettingHand
+                        scenery.value.now = Scenery.ScennaryItem.Find
                         Log.d("COLORCOLOR4","SH")
                 }
             }
@@ -317,7 +334,6 @@ class  ObjectDetectorAnalyzer  private constructor (
         var tempRasterFull = IntArray(width * height)
         var tempRaster = mutableListOf<Int>(width / 4 * height / 2)
         try {
-
             rgbBitmap.getPixels(tempRasterFull, 0, width, 0, 0, width, height)
             for(j in height/4 until height/4*3){
                 for(i in width/8*3 until width/8*5){
@@ -332,6 +348,8 @@ class  ObjectDetectorAnalyzer  private constructor (
         var av1 = 0f;
         var av2 = 0f;
         var av3 = 0f;
+        var pogr = 0f;
+
 
         var av1c = 0;
         var av2c = 0;
@@ -365,35 +383,43 @@ class  ObjectDetectorAnalyzer  private constructor (
             min3 = min3.coerceAtMost(hsb[2])
             max3 = max3.coerceAtLeast(hsb[2])
 
-            min1c = min1c.coerceAtMost (color[0])
-            max1c = max1c.coerceAtLeast(color[0])
-            min2c = min2c.coerceAtMost (color[1])
-            max2c = max2c.coerceAtLeast(color[1])
-            min3c = min3c.coerceAtMost (color[2])
-            max3c = max3c.coerceAtLeast(color[2])
+//            min1c = min1c.coerceAtMost (color[0])
+//            max1c = max1c.coerceAtLeast(color[0])
+//            min2c = min2c.coerceAtMost (color[1])
+//            max2c = max2c.coerceAtLeast(color[1])
+//            min3c = min3c.coerceAtMost (color[2])
+//            max3c = max3c.coerceAtLeast(color[2])
 
             // average
             av1 += hsb[0]
             av2 += hsb[1]
             av3 += hsb[2]
 
-            // average
-            av1c += color[0]
-            av2c += color[1]
-            av3c += color[2]
+//            // average
+//            av1c += color[0]
+//            av2c += color[1]
+//            av3c += color[2]
 
         }
         // average
         av1 /= tempRaster.size
         av2 /= tempRaster.size
         av3 /= tempRaster.size
+        var maxav =0f;
+        maxav = maxav.coerceAtLeast(av1);
+        maxav = maxav.coerceAtLeast(av2);
+        maxav = maxav.coerceAtLeast(av3);
+        //for example max1
+        pogr = ((max1-maxav)/max1);
 
-        av1c /= tempRaster.size
-        av2c /= tempRaster.size
-        av3c /= tempRaster.size
+
+
+//        av1c /= tempRaster.size
+//        av2c /= tempRaster.size
+//        av3c /= tempRaster.size
 
         Log.d("COLORCOLOR4", "----------------------------------------------------------")
-        Log.d("COLORCOLOR4", Arrays.toString(arrayOf(av1,av2,av3)))
+        Log.d("COLORCOLOR4", Arrays.toString(arrayOf(av1,av2,av3,pogr,maxav)))
         Log.d("COLORCOLOR4", Arrays.toString(arrayOf(min1, max1, min2, max2, min3, max3)))
 
         Log.d("COLORCOLOR4", Arrays.toString(arrayOf(av1c,av2c,av3c)))
@@ -401,7 +427,7 @@ class  ObjectDetectorAnalyzer  private constructor (
         Log.d("COLORCOLOR4", "----------------------------------------------------------")
 
 
-        return arrayOf(av1,av2,av3)
+        return arrayOf(av1,av2,av3,pogr)
     }
 
     private fun findhand(rgbBitmap :Bitmap): Array<IntArray> {
@@ -543,12 +569,12 @@ class  ObjectDetectorAnalyzer  private constructor (
     val koef = 0.20f
     fun strictSkinPixelRule(hsb: FloatArray): Boolean {
         //Log.d("handbound",("${hsb[0]}  ${hsb[1]} ${hsb[2]}").toString())
-        return  myMinMaxColorsflow.value!![0]-koef <hsb[0] &&
-                hsb[0] < myMinMaxColorsflow.value!![0]+koef &&
-                hsb[1] > myMinMaxColorsflow.value!![1]-koef &&
-                hsb[1] < myMinMaxColorsflow.value!![1]+koef &&
-                hsb[2] >myMinMaxColorsflow.value!![2]-koef &&
-                myMinMaxColorsflow.value!![2]+koef>hsb[2]
+        return  myMinMaxColorsflow.value!![0]-myMinMaxColorsflow.value!![3] <hsb[0] &&
+                hsb[0] < myMinMaxColorsflow.value!![0]+myMinMaxColorsflow.value!![3] &&
+                hsb[1] > myMinMaxColorsflow.value!![1]-myMinMaxColorsflow.value!![3] &&
+                hsb[1] < myMinMaxColorsflow.value!![1]+myMinMaxColorsflow.value!![3] &&
+                hsb[2] >myMinMaxColorsflow.value!![2]-myMinMaxColorsflow.value!![3] &&
+                myMinMaxColorsflow.value!![2]+myMinMaxColorsflow.value!![3]>hsb[2]
         /*myMinMaxColorsflow.value!![0] <hsb[0]*koef &&
                 hsb[0] < myMinMaxColorsflow.value!![1]*koef &&
                 hsb[1]*koef > myMinMaxColorsflow.value!![2] &&

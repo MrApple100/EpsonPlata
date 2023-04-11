@@ -46,7 +46,9 @@ import org.tensorflow.lite.examples.detection.databinding.BurgermenuBinding;
 import org.tensorflow.lite.examples.detection.databinding.FragmentCameraBinding;
 
 import java.io.IOException;
+import java.lang.reflect.Array;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Vector;
@@ -67,6 +69,7 @@ import ru.object.epsoncamera.utils.ImageUtil;
 public class MoverioCameraSampleFragment extends Activity implements CaptureStateCallback2, CaptureDataCallback, CaptureDataCallback2, PermissionGrantResultCallback, HeadsetStateCallback {
     private final String TAG = this.getClass().getSimpleName();
 
+    private static MoverioCameraSampleFragment instance = null;
     private static Context mContext = null;
 
     private CameraManager mCameraManager = null;
@@ -118,20 +121,28 @@ public class MoverioCameraSampleFragment extends Activity implements CaptureStat
     private final String  KEY_H = "KEY_H";
     private final String  KEY_S = "KEY_S";
     private final String  KEY_V = "KEY_V";
+    private final String  KEY_P = "KEY_P";
     private int current_H =0;
     private int current_S =0;
     private int current_V =0;
+    private int current_P =0;
     private SeekBar mSeekBar_colorH;
     private SeekBar mSeekBar_colorS;
     private SeekBar mSeekBar_colorV;
+    private SeekBar mSeekBar_pogr;
+
     private TextView tv_colorH;
     private TextView tv_colorS;
     private TextView tv_colorV;
+    private TextView tv_P;
+
     private Button bMenu;
     private LinearLayout burgerMenu;
     private Button bCalibrateHand;
+    private Boolean isCalibrateNow;
     private Button bCloseBurgerMenu;
     private Button bSaveHSV;
+    private Button bLoadHSV;
 
 
 
@@ -153,10 +164,11 @@ public class MoverioCameraSampleFragment extends Activity implements CaptureStat
 
 
         mContext = this;
+        instance = this;
         mCameraManager = new CameraManager(mContext, this);
 
 
-        analyzer = ObjectDetectorAnalyzer.Companion.getInstance(mContext, config, MoverioCameraSampleFragment::onDetectionResult);
+        analyzer = ObjectDetectorAnalyzer.Companion.getInstance(mContext, config,instance, MoverioCameraSampleFragment::onDetectionResult);
 
         mToggleButton_cameraOpenClose = bindingBurgerMenu.toggleButtonCameraOpenClose;
         mToggleButton_cameraOpenClose.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
@@ -260,7 +272,7 @@ public class MoverioCameraSampleFragment extends Activity implements CaptureStat
 
         mTextView_test = binding.textViewTest;
 
-        Toast.makeText(mContext,"Create",Toast.LENGTH_SHORT).show();
+     //   Toast.makeText(mContext,"Create",Toast.LENGTH_SHORT).show();
 
 
 
@@ -271,6 +283,8 @@ public class MoverioCameraSampleFragment extends Activity implements CaptureStat
         current_H = preferences.getInt(KEY_H,0);
         current_S = preferences.getInt(KEY_S,0);
         current_V = preferences.getInt(KEY_V,0);
+        current_P = preferences.getInt(KEY_P,0);
+
 
         tv_colorH = bindingBurgerMenu.TVCurrentH;
         tv_colorH.setText(current_H+"");
@@ -279,7 +293,9 @@ public class MoverioCameraSampleFragment extends Activity implements CaptureStat
         mSeekBar_colorH.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-
+                Float[] hsvp = analyzer.getMyMinMaxColorsState().getValue();
+                hsvp[0] = progress/360f;
+                analyzer.setMinMaxColor(hsvp);
                 current_H = progress;
                 tv_colorH.setText(progress+"");
             }
@@ -294,15 +310,17 @@ public class MoverioCameraSampleFragment extends Activity implements CaptureStat
 
             }
         });
+
         tv_colorS = bindingBurgerMenu.TVCurrentS;
         tv_colorS.setText(current_S+"");
-
         mSeekBar_colorS = bindingBurgerMenu.seekBarColorS;
         mSeekBar_colorS.setProgress(current_S);
-
         mSeekBar_colorS.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                Float[] hsvp = analyzer.getMyMinMaxColorsState().getValue();
+                hsvp[1] = progress/100f;
+                analyzer.setMinMaxColor(hsvp);
                 current_S = progress;
                 tv_colorS.setText(progress+"");
             }
@@ -320,13 +338,14 @@ public class MoverioCameraSampleFragment extends Activity implements CaptureStat
 
         tv_colorV = bindingBurgerMenu.TVCurrentV;
         tv_colorV.setText(current_V+"");
-
         mSeekBar_colorV = bindingBurgerMenu.seekBarColorV;
         mSeekBar_colorV.setProgress(current_V);
-
         mSeekBar_colorV.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                Float[] hsvp = analyzer.getMyMinMaxColorsState().getValue();
+                hsvp[2] = progress/100f;
+                analyzer.setMinMaxColor(hsvp);
                 current_V = progress;
                 tv_colorV.setText(progress+"");
 
@@ -342,6 +361,35 @@ public class MoverioCameraSampleFragment extends Activity implements CaptureStat
 
             }
         });
+
+        tv_P = bindingBurgerMenu.TVCurrentPogreshnost;
+        tv_P.setText(current_P+"");
+        mSeekBar_pogr = bindingBurgerMenu.seekBarColorPogreshnost;
+        mSeekBar_pogr.setProgress(current_P);
+        mSeekBar_pogr.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                Float[] hsvp = analyzer.getMyMinMaxColorsState().getValue();
+                hsvp[3] = progress/100f;
+                analyzer.setMinMaxColor(hsvp);
+                current_P = progress;
+                tv_P.setText(progress+"");
+
+            }
+
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {
+
+            }
+
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {
+
+            }
+        });
+
+
+
         burgerMenu = bindingBurgerMenu.BurgerMenu;
         bMenu = binding.Bmenu;
         bMenu.setOnClickListener(new View.OnClickListener() {
@@ -358,7 +406,12 @@ public class MoverioCameraSampleFragment extends Activity implements CaptureStat
         bCalibrateHand.setOnClickListener(new View.OnClickListener(){
             @Override
             public void onClick(View v) {
-
+                if(analyzer.getSceneryState().getValue().getNow()!=Scenery.ScennaryItem.SettingHand && analyzer.getSceneryState().getValue().getNow()!=Scenery.ScennaryItem.manualSettingHand) {
+                    analyzer.setScenery(Scenery.ScennaryItem.SettingHand);
+                    Toast.makeText(MoverioCameraSampleFragment.this, "Поместите прямоуголник на свою ладонь", Toast.LENGTH_SHORT).show();
+                }else{
+                    analyzer.setScenery(Scenery.ScennaryItem.Find);
+                }
             }
         });
 
@@ -370,8 +423,30 @@ public class MoverioCameraSampleFragment extends Activity implements CaptureStat
                 editor.putInt(KEY_H,current_H);
                 editor.putInt(KEY_S,current_S);
                 editor.putInt(KEY_V,current_V);
+                editor.putInt(KEY_P,current_P);
                 editor.apply();
                 Toast.makeText(MoverioCameraSampleFragment.this, "SAVE HSV", Toast.LENGTH_SHORT).show();
+
+            }
+        });
+        bLoadHSV = bindingBurgerMenu.LoadHSV;
+        bLoadHSV.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                current_H = preferences.getInt(KEY_H,0);
+                current_S = preferences.getInt(KEY_S,0);
+                current_V = preferences.getInt(KEY_V,0);
+                current_P = preferences.getInt(KEY_P,0);
+
+                mSeekBar_colorH.setProgress(current_H);
+                mSeekBar_colorS.setProgress(current_S);
+                mSeekBar_colorV.setProgress(current_V);
+                mSeekBar_pogr.setProgress(current_P);
+                tv_colorH.setText(current_H+"");
+                tv_colorS.setText(current_S+"");
+                tv_colorV.setText(current_V+"");
+                tv_P.setText(current_P+"");
+                Toast.makeText(MoverioCameraSampleFragment.this, "Load HSV", Toast.LENGTH_SHORT).show();
 
             }
         });
@@ -394,11 +469,31 @@ public class MoverioCameraSampleFragment extends Activity implements CaptureStat
 
     }
 
+    public void setHSVPprogress(Float[] hsvp){
+        current_H = (int) (hsvp[0] *360);
+        current_S = (int) (hsvp[1] *100);
+        current_V = (int) (hsvp[2] *100);
+        current_P = (int) (hsvp[3]*100);
+        mSeekBar_colorH.setProgress(current_H);
+        mSeekBar_colorS.setProgress(current_S);
+        mSeekBar_colorV.setProgress(current_V);
+        mSeekBar_pogr.setProgress(current_P);
+        tv_colorH.setText(current_H+"");
+        tv_colorS.setText(current_S+"");
+        tv_colorV.setText(current_V+"");
+        tv_P.setText(current_P+"");
+
+
+
+
+
+    }
+
     @Override
     public void onResume() {
         super.onResume();
         mDeviceManager.registerHeadsetStateCallback(this);
-        Toast.makeText(mContext,"Resume",Toast.LENGTH_SHORT).show();
+      //  Toast.makeText(mContext,"Resume",Toast.LENGTH_SHORT).show();
 
     }
 
@@ -406,7 +501,7 @@ public class MoverioCameraSampleFragment extends Activity implements CaptureStat
     public void onPause() {
         super.onPause();
         mDeviceManager.unregisterHeadsetStateCallback(this); //было закомменчено WHY?????
-        Toast.makeText(mContext,"Pause",Toast.LENGTH_SHORT).show();
+     //   Toast.makeText(mContext,"Pause",Toast.LENGTH_SHORT).show();
 
     }
     @Override
@@ -417,7 +512,7 @@ public class MoverioCameraSampleFragment extends Activity implements CaptureStat
         mCalcurationRate_framerate.finish();
         mDeviceManager.release();
         mDeviceManager = null;
-        Toast.makeText(mContext,"Destroy",Toast.LENGTH_SHORT).show();
+    //    Toast.makeText(mContext,"Destroy",Toast.LENGTH_SHORT).show();
 
     }
 
