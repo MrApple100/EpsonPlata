@@ -8,6 +8,8 @@ import android.os.Handler
 import android.os.Looper
 import android.util.Log
 import androidx.constraintlayout.solver.widgets.Rectangle
+import com.epson.moverio.library.usb.x
+import com.epson.moverio.library.usb.y
 import com.google.zxing.Result
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.CompositeDisposable
@@ -30,6 +32,7 @@ import java.util.concurrent.Executor
 import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.collections.ArrayList
+import kotlin.collections.HashMap
 
 
 class  ObjectDetectorAnalyzer  private constructor (
@@ -90,6 +93,8 @@ class  ObjectDetectorAnalyzer  private constructor (
     private var myResize = MutableStateFlow<Bitmap>(Bitmap.createBitmap(config.inputSize, config.inputSize, Bitmap.Config.ARGB_8888))
     private var myDarkflow = MutableStateFlow<Boolean>(false)
     private var myhandboundflow = MutableStateFlow<Array<IntArray>>(arrayOf())
+    //private var pictureInCenterflow = MutableStateFlow<Array<IntArray>>(arrayOf())
+
     private var myRGBpictureflow = MutableStateFlow<Bitmap?>(null)
     private var barcoderesultflow = MutableStateFlow<com.google.zxing.Result?>(null)
     private var objectsflow = MutableStateFlow<List<DetectionResult>>(arrayListOf())
@@ -162,6 +167,9 @@ class  ObjectDetectorAnalyzer  private constructor (
         launch {
             myhandboundflow.value = findhand(myResize.value)
         }
+//        launch {
+//            pictureInCenterflow.value = PictureInCenter(myResize.value)
+//        }
 
         launch {
             try {
@@ -216,6 +224,7 @@ class  ObjectDetectorAnalyzer  private constructor (
                     result,
                     barcoderesultflow.value,
                     myhandboundflow.value,
+                   // pictureInCenterflow.value,
                     myDarkflow.value,
                     scenery.value
                 )
@@ -328,18 +337,63 @@ class  ObjectDetectorAnalyzer  private constructor (
       //  Log.d("DARK",hsb[2].toString())
         return  hsb[2] <0.04f
     }
-    private fun recognizeColorInCenter(rgbBitmap: Bitmap): Array<Float> {
+//    private fun PictureInCenter(rgbBitmap: Bitmap): Array<IntArray> {
+//
+//        val height = rgbBitmap.height
+//        val width = rgbBitmap.width
+//        val centerX = rgbBitmap.width / 2
+//        val centerY = rgbBitmap.height / 2
+//        val halfWidth = rgbBitmap.width / 4
+//        val halfHeight = rgbBitmap.height / 2
+//      //  val bitmap = Bitmap.createBitmap(width/4, height/2, Bitmap.Config.ARGB_8888)
+//        val aai =  Array(height/2) { IntArray(width/4)}
+//
+//
+//        var tempRasterFull = IntArray(width * height)
+//        var tempRaster = IntArray(width / 4 * height / 2)
+//
+//        try {
+//            rgbBitmap.getPixels(
+//                tempRaster,        // массив для хранения цветов пикселей
+//                0,             // смещение по оси X
+//                halfWidth,     // ширина области
+//                centerX - halfWidth/2, // смещение по оси X центра области
+//                centerY - halfHeight/2, // смещение по оси Y центра области
+//                halfWidth,     // ширина области
+//                halfHeight     // высота области
+//            )
+//                for(j in 0 until height/2){
+//                    for(i in 0 until width/4){
+//                        aai[j][i] = tempRaster[i * j + i]
+//                }
+//            }
+//        } catch (exeption: Exception) {
+//            Log.d("COLORCOLOR2"+"${width / 4} "+" ${height / 2}", exeption.stackTraceToString())
+//        }
+//
+//// Заполняем Bitmap пикселями из списка RGB значений
+//        Log.d("COLORCOLORRGB",""+aai.forEach { it->it.toString()+" " })
+//
+//        return aai
+//    }
+        private fun recognizeColorInCenter(rgbBitmap: Bitmap): Array<Float> {
         val height = rgbBitmap.height
         val width = rgbBitmap.width
-        var tempRasterFull = IntArray(width * height)
-        var tempRaster = mutableListOf<Int>(width / 4 * height / 2)
+        val centerX = rgbBitmap.width / 2
+        val centerY = rgbBitmap.height / 2
+        val halfWidth = rgbBitmap.width / 4
+        val halfHeight = rgbBitmap.height / 2
+        var tempRaster = IntArray(width / 4 * height / 2)
         try {
-            rgbBitmap.getPixels(tempRasterFull, 0, width, 0, 0, width, height)
-            for(j in height/4 until height/4*3){
-                for(i in width/8*3 until width/8*5){
-                    tempRaster.add(tempRasterFull[i*j+j])
-                }
-            }
+            rgbBitmap.getPixels(
+                tempRaster,        // массив для хранения цветов пикселей
+                0,             // смещение по оси X
+                halfWidth,     // ширина области
+                centerX - halfWidth/2, // смещение по оси X центра области
+                centerY - halfHeight/2, // смещение по оси Y центра области
+                halfWidth,     // ширина области
+                halfHeight     // высота области
+            )
         } catch (exeption: Exception) {
             Log.d("COLORCOLOR2", exeption.stackTraceToString())
         }
@@ -362,6 +416,14 @@ class  ObjectDetectorAnalyzer  private constructor (
         var min3 = 1f;
         var max3 = 0f;
 
+        val maxCountHSB = HashMap<String, Int>();
+
+//        val maxCountH = HashMap<Float, Int>();
+//        val maxCountS = HashMap<Float, Int>();
+//        val maxCountB = HashMap<Float, Int>();
+
+
+
         var min1c = 255;
         var max1c = 0;
         var min2c = 255;
@@ -373,6 +435,11 @@ class  ObjectDetectorAnalyzer  private constructor (
 
             val hsb = FloatArray(3) // HSB array
             RGBtoHSB(color[0], color[1], color[2], hsb)
+            val stringHSB = ""+hsb[0]+"/"+hsb[1]+"/"+hsb[2]
+            maxCountHSB.put(stringHSB,maxCountHSB.getOrDefault(stringHSB,0));
+//            maxCountH.put(hsb[0], maxCountH.getOrDefault(hsb[0],0))
+//            maxCountS.put(hsb[1], maxCountS.getOrDefault(hsb[1],0))
+//            maxCountB.put(hsb[2], maxCountB.getOrDefault(hsb[2],0))
 
 
             //absolute, but maybe need average?
@@ -401,6 +468,13 @@ class  ObjectDetectorAnalyzer  private constructor (
 //            av3c += color[2]
 
         }
+
+        var maxPairHSB = maxCountHSB.maxByOrNull { it.value }
+        var maxPointsOfHSB = maxPairHSB!!.key.split("/")
+
+        var maxPointsOfH = maxPointsOfHSB[0].toFloat()
+        var maxPointsOfS = maxPointsOfHSB[1].toFloat()
+        var maxPointsOfB = maxPointsOfHSB[2].toFloat()
         // average
         av1 /= tempRaster.size
         av2 /= tempRaster.size
@@ -410,7 +484,11 @@ class  ObjectDetectorAnalyzer  private constructor (
         maxav = maxav.coerceAtLeast(av2);
         maxav = maxav.coerceAtLeast(av3);
         //for example max1
-        pogr = ((max1-maxav)/max1);
+        //pogr = ((max1-maxav)/max1);
+
+        pogr=0.2f
+
+
 
 
 
@@ -419,6 +497,7 @@ class  ObjectDetectorAnalyzer  private constructor (
 //        av3c /= tempRaster.size
 
         Log.d("COLORCOLOR4", "----------------------------------------------------------")
+        Log.d("COLORCOLOR4", Arrays.toString(arrayOf(maxPointsOfH,maxPointsOfS,maxPointsOfB,pogr)))
         Log.d("COLORCOLOR4", Arrays.toString(arrayOf(av1,av2,av3,pogr,maxav)))
         Log.d("COLORCOLOR4", Arrays.toString(arrayOf(min1, max1, min2, max2, min3, max3)))
 
@@ -427,7 +506,7 @@ class  ObjectDetectorAnalyzer  private constructor (
         Log.d("COLORCOLOR4", "----------------------------------------------------------")
 
 
-        return arrayOf(av1,av2,av3,pogr)
+        return arrayOf(maxPointsOfH,maxPointsOfS,maxPointsOfB,pogr)
     }
 
     private fun findhand(rgbBitmap :Bitmap): Array<IntArray> {

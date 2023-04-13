@@ -312,15 +312,15 @@ class RecognitionResultOverlayView @JvmOverloads constructor(
                         for (i in 0 until handbound!!.size) {
                             for (j in 0 until handbound!![i].size) {
 
-                                intArray.set(i * j + j, handbound!![i][j] * 1200000)
-//
+                               
                                 if(handbound!![i][j]==1) {
+
                                     centerPaint.color = Color.WHITE
-                                    canvas.drawCircle(canvas.width/2+ j.toFloat(),canvas.height/2+ i.toFloat(), 3.0f, centerPaint)
+                                    canvas.drawRect(canvas.width/2+ j.toFloat(),canvas.height/4 + i.toFloat(),canvas.width/2+ j.toFloat()+1,canvas.height/4 + i.toFloat()+1, centerPaint)
                                 }
                                 else {
                                     centerPaint.color = Color.BLACK
-                                    canvas.drawCircle(canvas.width/2+ j.toFloat(),canvas.height/2+ i.toFloat(), 3.0f, centerPaint)
+                                    canvas.drawRect(canvas.width/2+ j.toFloat(),canvas.height/4 + i.toFloat(),canvas.width/2+ j.toFloat()+1,canvas.height/4 + i.toFloat()+1, centerPaint)
                                 }
 //
                             }
