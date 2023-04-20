@@ -207,8 +207,8 @@ class MoverioCameraSampleFragment : Activity(), CaptureStateCallback2,
         current_P = preferences?.getInt(KEY_P, 0)!!
         val hsvp: Array<Float>? = analyzer?.myMinMaxColorsState?.value
         hsvp?.set(0, current_H / 360f)
-        hsvp?.set(1, current_S / 360f)
-        hsvp?.set(2, current_V / 360f)
+        hsvp?.set(1, current_S / 100f)
+        hsvp?.set(2, current_V / 100f)
         hsvp?.set(3, current_P / 100f)
         if (hsvp != null) {
             analyzer?.setMinMaxColor(hsvp)
@@ -333,8 +333,8 @@ class MoverioCameraSampleFragment : Activity(), CaptureStateCallback2,
             tv_P!!.text = current_P.toString() + ""
             val hsvp: Array<Float>? = analyzer?.myMinMaxColorsState?.value
             hsvp?.set(0, current_H / 360f)
-            hsvp?.set(1, current_S / 360f)
-            hsvp?.set(2, current_V / 360f)
+            hsvp?.set(1, current_S / 100f)
+            hsvp?.set(2, current_V / 100f)
             hsvp?.set(3, current_P / 100f)
             if (hsvp != null) {
                 analyzer?.setMinMaxColor(hsvp)
