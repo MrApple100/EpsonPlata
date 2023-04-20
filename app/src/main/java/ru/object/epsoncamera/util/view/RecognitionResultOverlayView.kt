@@ -174,7 +174,7 @@ class RecognitionResultOverlayView @JvmOverloads constructor(
             for (i in objectsAngles.values.filter { obj ->
                 objectsDetectedWait.get(obj.title)!! >= 0 && objectsDetectedWait.get(
                     obj.title
-                )!! <= 10
+                )!! <= 3 //10
             }) {
                 if (newresult.find { it.title == i.title } == null) {
                     newresult = newresult.plus(i) as MutableList<DetectionResult>
@@ -227,12 +227,12 @@ class RecognitionResultOverlayView @JvmOverloads constructor(
                     objectsDetectedWait.set(i, 0)
 
                 } else {
-                    if (objectsDetectedWait.get(i)!! <= 10) {
+                    if (objectsDetectedWait.get(i)!! <= 3) {//10
                         objectsDetectedWait.set(i, objectsDetectedWait.get(i)?.plus(1)!!)
                     }
                     Log.d("WAITWAIT", objectsDetectedWait.toString())
                     Log.d("WAITWAIT---", objectsDetectedOld.toString())
-                    if (objectsDetectedWait.get(i)!! >= 10) {//2 sec wait 30 fps
+                    if (objectsDetectedWait.get(i)!! >= 3) {//2 sec wait 30 fps//10
                         objectsDetectedOld[i] = 0
                     }
                 }
@@ -268,8 +268,7 @@ class RecognitionResultOverlayView @JvmOverloads constructor(
                                 sec.value=0
 
                             }
-                            context.getString(R.string.MayStart)
-
+                            ""
 
                         }
                         else -> {
@@ -307,12 +306,10 @@ class RecognitionResultOverlayView @JvmOverloads constructor(
 
                 }
                 Scenery.ScennaryItem.manualSettingHand->{
-
                     if (handbound != null) {
                         for (i in 0 until handbound!!.size) {
                             for (j in 0 until handbound!![i].size) {
 
-                               
                                 if(handbound!![i][j]==1) {
 
                                     centerPaint.color = Color.WHITE
@@ -327,17 +324,8 @@ class RecognitionResultOverlayView @JvmOverloads constructor(
 
                         }
                     }
-//                    canvas.drawBitmap(
-//                        Bitmap.createBitmap(
-//                            intArray,
-//                            handbound!!.size,
-//                            handbound!![0].size,
-//                            Bitmap.Config.ARGB_8888
-//                        ), canvas.width.toFloat()/2, canvas.height.toFloat()/2, centerPaint
-//                    )
-
                 }
-                Scenery.ScennaryItem.Barcode ->{
+                Scenery.ScennaryItem.Barcode -> {
                     textView.visibility = INVISIBLE
 
                     MainText = context.getString(R.string.WorkWithBarcode)
@@ -353,16 +341,6 @@ class RecognitionResultOverlayView @JvmOverloads constructor(
 
                                     handboundVsplesk[i] += handbound!![i][j].toFloat()
                                     intArray.set(i * j + j, handbound!![i][j] * 1200000)
-/////
-//                                     if(handbound!![i][j]==1) {
-//                            centerPaint.color = Color.WHITE
-//                            canvas.drawCircle(canvas.width+ i.toFloat(),canvas.height+ j.toFloat(), 3.0f, centerPaint)
-//                        }
-//                        else {
-//                            centerPaint.color = Color.BLACK
-//                            canvas.drawCircle(canvas.width+ i.toFloat(),canvas.height+ j.toFloat(), 3.0f, centerPaint)
-//                        }
-//////
                                 }
                                 if (handboundVsplesk[i] > 0) {
                                     /*Log.d(
@@ -431,14 +409,7 @@ class RecognitionResultOverlayView @JvmOverloads constructor(
 
                             }
                             if (handbound!!.size > 0) {
-                                canvas.drawBitmap(
-                                    Bitmap.createBitmap(
-                                        intArray,
-                                        handbound!!.size,
-                                        handbound!![0].size,
-                                        Bitmap.Config.ARGB_8888
-                                    ), 0.0f, 0.0f, centerPaint
-                                )
+//
                             }
                         }
                     }
@@ -453,7 +424,7 @@ class RecognitionResultOverlayView @JvmOverloads constructor(
 
                             if (!Platas.containsKey(obj.title)) {
                                 //Каждый 15 фрейм берем и записываем                   после 15 фрейма
-                                if (objectsDetectedOld.get(obj.title)!! % 15 == 0 && (objectsDetectedOld.get(obj.title)!! >= 15 )) {
+                                if (objectsDetectedOld.get(obj.title)!! % 3 == 0 && (objectsDetectedOld.get(obj.title)!! >= 3 )) {
                                     Log.d("SCALE", "$scaleFactorX $scaleFactorY")
                                     objectsAngles.get(obj.title)?.location?.left = obj.location.left * scaleFactorX
                                     objectsAngles.get(obj.title)?.location?.top = obj.location.top * scaleFactorY
@@ -482,7 +453,7 @@ class RecognitionResultOverlayView @JvmOverloads constructor(
                                         }
 
                                         if (objectsDetectedOld.contains(idProcessor)) {
-                                            if (objectsDetectedOld.get(idProcessor)!! >= 30) {
+                                            if (objectsDetectedOld.get(idProcessor)!! >= 5) {//30
                                                 scenery!!.now = Scenery.ScennaryItem.Insert
                                                 MainText =
                                                     context.getString(R.string.Insert_to_place)
