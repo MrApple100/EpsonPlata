@@ -53,7 +53,7 @@
                 android:textSize="20sp">
             </TextView>
             <Spinner
-                android:id="@+id/spinner_cpatureInfo"
+                android:id="@+id/spinner_captureInfo"
                 android:layout_width="200dp"
                 android:layout_height="20dp"
                 android:background="@color/grayspinner"

@@ -8,17 +8,13 @@ import android.os.Handler
 import android.os.Looper
 import android.util.Log
 import androidx.constraintlayout.solver.widgets.Rectangle
-import com.epson.moverio.library.usb.x
-import com.epson.moverio.library.usb.y
-import com.google.zxing.Result
-import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.CompositeDisposable
-import io.reactivex.rxkotlin.addTo
-import kotlinx.coroutines.*
-import kotlinx.coroutines.Dispatchers.Main
-import kotlinx.coroutines.channels.BufferOverflow
-import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import ru.`object`.epsoncamera.MoverioCameraSampleFragment
 import ru.`object`.epsoncamera.detection.DetectionResult
 import ru.`object`.epsoncamera.detection.ObjectDetector
@@ -28,18 +24,14 @@ import ru.`object`.epsoncamera.utils.ImageUtil
 import ru.`object`.epsoncamera.utils.YuvToRgbConverter
 import java.nio.ByteBuffer
 import java.util.*
-import java.util.concurrent.Executor
-import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicInteger
-import kotlin.collections.ArrayList
-import kotlin.collections.HashMap
 
 
-class  ObjectDetectorAnalyzer  private constructor (
+class ObjectDetectorAnalyzer private constructor(
     private val context: Context,
     private val config: Config,
-    private val mainActivity: MoverioCameraSampleFragment,
-    private val onDetectionResult: (Result,com.google.zxing.Result?,Array<IntArray>?,Boolean, Scenery) -> Boolean,
+    private val mainActivity: MoverioCameraSampleFragment?,
+    private val onDetectionResult: (Result, com.google.zxing.Result?, Array<IntArray>?, Boolean, Scenery) -> Boolean,
 //    private val setHSVPprogress:(Array<Float>) -> Unit
 ) {
 
@@ -49,14 +41,16 @@ class  ObjectDetectorAnalyzer  private constructor (
         private val DEBUG = false
         val datamass = MutableStateFlow<ByteArray>(byteArrayOf())
 
-        private var instance : ObjectDetectorAnalyzer? = null
+        private var instance: ObjectDetectorAnalyzer? = null
 
-        fun  getInstance(context: Context,
-                         config: Config,
-                         mainActivity: MoverioCameraSampleFragment,
-                         onDetectionResult: (Result,com.google.zxing.Result?,Array<IntArray>?,Boolean, Scenery) -> Boolean,): ObjectDetectorAnalyzer {
+        fun getInstance(
+            context: Context,
+            config: Config,
+            mainActivity: MoverioCameraSampleFragment?,
+            onDetectionResult: (Result, com.google.zxing.Result?, Array<IntArray>?, Boolean, Scenery) -> Boolean,
+        ): ObjectDetectorAnalyzer {
             if (instance == null)  // NOT thread safe!
-                instance = ObjectDetectorAnalyzer(context, config,mainActivity, onDetectionResult,)
+                instance = ObjectDetectorAnalyzer(context, config, mainActivity, onDetectionResult)
 
             return instance!!
         }
@@ -75,8 +69,6 @@ class  ObjectDetectorAnalyzer  private constructor (
 
     private val uiHandler = Handler(Looper.getMainLooper())
 
-
-
     private var inputArray = IntArray(config.inputSize * config.inputSize)
 
     private var objectDetector: ObjectDetector? = null
@@ -87,10 +79,16 @@ class  ObjectDetectorAnalyzer  private constructor (
 
     private var scanDispose = CompositeDisposable()
 
-    private var handbound:Array<IntArray>? = null
+    private var handbound: Array<IntArray>? = null
 
 
-    private var myResize = MutableStateFlow<Bitmap>(Bitmap.createBitmap(config.inputSize, config.inputSize, Bitmap.Config.ARGB_8888))
+    private var myResize = MutableStateFlow<Bitmap>(
+        Bitmap.createBitmap(
+            config.inputSize,
+            config.inputSize,
+            Bitmap.Config.ARGB_8888
+        )
+    )
     private var myDarkflow = MutableStateFlow<Boolean>(false)
     private var myhandboundflow = MutableStateFlow<Array<IntArray>>(arrayOf())
     //private var pictureInCenterflow = MutableStateFlow<Array<IntArray>>(arrayOf())
@@ -99,51 +97,48 @@ class  ObjectDetectorAnalyzer  private constructor (
     private var barcoderesultflow = MutableStateFlow<com.google.zxing.Result?>(null)
     private var objectsflow = MutableStateFlow<List<DetectionResult>>(arrayListOf())
 
-    private var myMinMaxColorsflow = MutableStateFlow<Array<Float>?>(emptyArray())
+    private var myMinMaxColorsflow = MutableStateFlow<Array<Float>>(arrayOf(0f, 0f, 0f, 0f))
     var myMinMaxColorsState = myMinMaxColorsflow.asStateFlow();
 
-    public fun setMinMaxColor(hsvp :Array<Float>){
-         myMinMaxColorsflow.value = hsvp
+    public fun setMinMaxColor(hsvp: Array<Float>) {
+        myMinMaxColorsflow.value = hsvp
     }
 
-    private var scenery  = MutableStateFlow<Scenery>(Scenery())
+    private var scenery = MutableStateFlow<Scenery>(Scenery())
     var sceneryState = scenery.asStateFlow();
 
 
-    public fun setScenery(sceneryItem: Scenery.ScennaryItem){
+    public fun setScenery(sceneryItem: Scenery.ScennaryItem) {
         scenery.value.now = sceneryItem
     }
 
 
+    fun analyze(datamass: ByteArray, width: Int, height: Int) = runBlocking(Dispatchers.IO) {
+        val data = ByteBuffer.wrap(datamass)
+        data.rewind()
+        val rgbBitmapimage = getArgbBitmap(width, height)
+        rgbBitmapimage.copyPixelsFromBuffer(data)
 
 
+        // resizedBitmap = Bitmap.createBitmap(config.inputSize, config.inputSize, Bitmap.Config.ARGB_8888)
+        val iteration = iterationCounter.getAndIncrement()
 
-    fun analyze(datamass:ByteArray,width:Int,height:Int) = runBlocking(Dispatchers.IO) {
-            val data = ByteBuffer.wrap(datamass)
-            data.rewind()
-            val rgbBitmapimage = getArgbBitmap(width, height)
-            rgbBitmapimage.copyPixelsFromBuffer(data)
+        //val resizedBitmap = getArgbBitmap(config.inputSize, config.inputSize)
 
+        //yuvToRgbConverter.yuvToRgb(image, rgbBitmap)
 
-            // resizedBitmap = Bitmap.createBitmap(config.inputSize, config.inputSize, Bitmap.Config.ARGB_8888)
-            val iteration = iterationCounter.getAndIncrement()
-
-            //val resizedBitmap = getArgbBitmap(config.inputSize, config.inputSize)
-
-            //yuvToRgbConverter.yuvToRgb(image, rgbBitmap)
-
-            val transformation = getTransformation(0, width, height)
+        val transformation = getTransformation(0, width, height)
 
 
-            myRGBpictureflow.value = rgbBitmapimage
+        myRGBpictureflow.value = rgbBitmapimage
 
 
-            if (myRGBpictureflow.value != null)
-                Canvas(myResize.value).drawBitmap(myRGBpictureflow.value!!, transformation, null)
-        launch {
-            if (scenery.value.now == Scenery.ScennaryItem.SettingHand) {
+        if (myRGBpictureflow.value != null)
+            Canvas(myResize.value).drawBitmap(myRGBpictureflow.value!!, transformation, null)
+        if (scenery.value.now == Scenery.ScennaryItem.SettingHand) {
+            launch {
                 myMinMaxColorsflow.value = recognizeColorInCenter(myResize.value)
-                mainActivity.setHSVPprogress(myMinMaxColorsflow.value)
+                mainActivity?.setHSVPprogress(myMinMaxColorsflow.value!!)
                 delay(500);
 
             }
@@ -154,88 +149,69 @@ class  ObjectDetectorAnalyzer  private constructor (
             myDarkflow.value = DarkReset(myResize.value)
             delay(1000)
         }
-        launch{
-            if(myDarkflow.value ){
+        if (myDarkflow.value) {
+            launch {
                 delay(2000)
-                if(DarkReset(myResize.value)){
-                        scenery.value.now = Scenery.ScennaryItem.Find
-                        Log.d("COLORCOLOR4","SH")
+                if (DarkReset(myResize.value)) {
+                    scenery.value.now = Scenery.ScennaryItem.Find
+                    Log.d("COLORCOLOR4", "SH")
                 }
             }
-           // delay(1000)
         }
-        launch {
-            myhandboundflow.value = findhand(myResize.value)
+        if (scenery.value.now == Scenery.ScennaryItem.manualSettingHand || scenery.value.now == Scenery.ScennaryItem.SettingHand || scenery.value.now == Scenery.ScennaryItem.Barcode){
+            launch {
+                myhandboundflow.value = findhand(myResize.value)
+            }
         }
 //        launch {
 //            pictureInCenterflow.value = PictureInCenter(myResize.value)
 //        }
-
-        launch {
-            try {
-                if (myRGBpictureflow.value != null) {
+        if (myRGBpictureflow.value != null) {
+            launch {
+                try {
                     barcoderesultflow.value = BarcodeImageScanner.tryParse(myRGBpictureflow.value!!)
                     Log.d("BARCODE", barcoderesultflow.value!!.text)
+
+                } catch (ex: Exception) {
+                    Log.d("BARCODE", ex.stackTraceToString())
                 }
-            } catch (ex: Exception) {
-                Log.d("BARCODE", ex.stackTraceToString())
             }
         }
-                    /*BarcodeImageScanner
-                        .parse(myRGBpictureflow.value!!)
-                        .observeOn(AndroidSchedulers.mainThread())
-                        .subscribe(
-                            { barcoderesult ->
-                                Log.d("ANALYZER1", "ANALYZER2 " + "${barcoderesult.text}")
-                                barcoderesultflow.value = barcoderesult
-                            },
-                            {
-                                barcoderesultflow.value = null
-                                Log.d("Barcode", "error")
-                            }
-
-                        ).addTo(scanDispose)
-
-*/
-
-
-       // uiHandler.post {
-                // threadToDetect.execute {
-                ImageUtil.storePixels(myResize.value, inputArray)
-                objectsflow.value = detect(inputArray)
-                // }
-           // }
-
-
-            //Log.d(TAG, "detection objects($iteration): $objects")
-                val result = Result(
-                    objects = objectsflow.value,
-                    imageWidth = config.inputSize,
-                    imageHeight = config.inputSize,
-                    imageRotationDegrees = 0
-                )
-            if(myDarkflow.value){
-                barcoderesultflow.value = null
-                myhandboundflow.value = arrayOf()
-              //  scenery.value.now = Scenery.ScennaryItem.SettingHand
-            }
-            uiHandler.post {
-                onDetectionResult.invoke(
-                    result,
-                    barcoderesultflow.value,
-                    myhandboundflow.value,
-                   // pictureInCenterflow.value,
-                    myDarkflow.value,
-                    scenery.value
-                )
-            }
-
-                // Log.d("COLORCOLOR", "End")
 
 
 
+        // uiHandler.post {
+        // threadToDetect.execute {
+            ImageUtil.storePixels(myResize.value, inputArray)
+            objectsflow.value = detect(inputArray)
+
+        // }
+        // }
 
 
+        //Log.d(TAG, "detection objects($iteration): $objects")
+        val result = Result(
+            objects = objectsflow.value,
+            imageWidth = config.inputSize,
+            imageHeight = config.inputSize,
+            imageRotationDegrees = 0
+        )
+        if (myDarkflow.value) {
+            barcoderesultflow.value = null
+            myhandboundflow.value = arrayOf()
+        }
+        uiHandler.post {
+            onDetectionResult.invoke(
+                result,
+                barcoderesultflow.value,
+                myhandboundflow.value,
+                // pictureInCenterflow.value,
+                myDarkflow.value,
+                scenery.value
+            )
+        }
+
+        // Log.d("COLORCOLOR", "End")
 
 
     }
@@ -243,7 +219,13 @@ class  ObjectDetectorAnalyzer  private constructor (
     private fun getTransformation(rotationDegrees: Int, srcWidth: Int, srcHeight: Int): Matrix {
         var toInput = matrixToInput
         if (toInput == null) {
-            toInput = ImageUtil.getTransformMatrix(rotationDegrees, srcWidth, srcHeight, config.inputSize, config.inputSize)
+            toInput = ImageUtil.getTransformMatrix(
+                rotationDegrees,
+                srcWidth,
+                srcHeight,
+                config.inputSize,
+                config.inputSize
+            )
             matrixToInput = toInput
         }
         return toInput
@@ -286,7 +268,7 @@ class  ObjectDetectorAnalyzer  private constructor (
         val isQuantized: Boolean,
         val modelFile: String,
         val labelsFile: String,
-        val barcodetextTolink:String
+        val barcodetextTolink: String
     )
 
     data class Result(
@@ -300,14 +282,14 @@ class  ObjectDetectorAnalyzer  private constructor (
 
 
     //temp raster
-    private fun DarkReset(rgbBitmap: Bitmap):Boolean{
+    private fun DarkReset(rgbBitmap: Bitmap): Boolean {
         val height = rgbBitmap.height
         val width = rgbBitmap.width
 
         var index = 0
         var howdark = 0
-        var pixelRaster = IntArray( width * height)//pixel raster for initial cam image
-        ImageUtil.storePixels( myResize.value!!, pixelRaster)
+        var pixelRaster = IntArray(width * height)//pixel raster for initial cam image
+        ImageUtil.storePixels(myResize.value!!, pixelRaster)
 
 
         //THAT
@@ -315,7 +297,8 @@ class  ObjectDetectorAnalyzer  private constructor (
         for (i in 0 until height) {
             var j = 0
             while (j < width) {
-                val color: IntArray = hexToRGB(pixelRaster.get(index))!! //convert hex arbg integer to RGB array
+                val color: IntArray =
+                    hexToRGB(pixelRaster.get(index))!! //convert hex arbg integer to RGB array
                 val hsb = FloatArray(3) // HSB array
                 RGBtoHSB(color[0], color[1], color[2], hsb) //convert RGB to HSB array
 
@@ -329,15 +312,17 @@ class  ObjectDetectorAnalyzer  private constructor (
                 index++
             }
         }
-     //   Log.d("DARKDARK","NowDark "+howdark.toFloat()/(width * height))
+        //   Log.d("DARKDARK","NowDark "+howdark.toFloat()/(width * height))
 
-        return howdark>(width * height)/100*95
+        return howdark > (width * height) / 100 * 95
     }
+
     fun DarkRule(hsb: FloatArray): Boolean {
-      //  Log.d("DARK",hsb[2].toString())
-        return  hsb[2] <0.04f
+        //  Log.d("DARK",hsb[2].toString())
+        return hsb[2] < 0.04f
     }
-//    private fun PictureInCenter(rgbBitmap: Bitmap): Array<IntArray> {
+
+    //    private fun PictureInCenter(rgbBitmap: Bitmap): Array<IntArray> {
 //
 //        val height = rgbBitmap.height
 //        val width = rgbBitmap.width
@@ -376,7 +361,7 @@ class  ObjectDetectorAnalyzer  private constructor (
 //
 //        return aai
 //    }
-        private fun recognizeColorInCenter(rgbBitmap: Bitmap): Array<Float> {
+    private fun recognizeColorInCenter(rgbBitmap: Bitmap): Array<Float> {
         val height = rgbBitmap.height
         val width = rgbBitmap.width
         val centerX = rgbBitmap.width / 2
@@ -389,15 +374,15 @@ class  ObjectDetectorAnalyzer  private constructor (
                 tempRaster,        // массив для хранения цветов пикселей
                 0,             // смещение по оси X
                 halfWidth,     // ширина области
-                centerX - halfWidth/2, // смещение по оси X центра области
-                centerY - halfHeight/2, // смещение по оси Y центра области
+                centerX - halfWidth / 2, // смещение по оси X центра области
+                centerY - halfHeight / 2, // смещение по оси Y центра области
                 halfWidth,     // ширина области
                 halfHeight     // высота области
             )
         } catch (exeption: Exception) {
             Log.d("COLORCOLOR2", exeption.stackTraceToString())
         }
-         Log.d("COLORCOLOR3", tempRaster.size.toString())
+        Log.d("COLORCOLOR3", tempRaster.size.toString())
 
         var av1 = 0f;
         var av2 = 0f;
@@ -423,7 +408,6 @@ class  ObjectDetectorAnalyzer  private constructor (
 //        val maxCountB = HashMap<Float, Int>();
 
 
-
         var min1c = 255;
         var max1c = 0;
         var min2c = 255;
@@ -431,12 +415,13 @@ class  ObjectDetectorAnalyzer  private constructor (
         var min3c = 255;
         var max3c = 0;
         for (index in 0 until tempRaster.size) {
-            val color: IntArray = hexToRGB(tempRaster!![index])!! //convert hex arbg integer to RGB array
+            val color: IntArray =
+                hexToRGB(tempRaster!![index])!! //convert hex arbg integer to RGB array
 
             val hsb = FloatArray(3) // HSB array
             RGBtoHSB(color[0], color[1], color[2], hsb)
-            val stringHSB = ""+hsb[0]+"/"+hsb[1]+"/"+hsb[2]
-            maxCountHSB.put(stringHSB,maxCountHSB.getOrDefault(stringHSB,0));
+            val stringHSB = "" + hsb[0] + "/" + hsb[1] + "/" + hsb[2]
+            maxCountHSB.put(stringHSB, maxCountHSB.getOrDefault(stringHSB, 0));
 //            maxCountH.put(hsb[0], maxCountH.getOrDefault(hsb[0],0))
 //            maxCountS.put(hsb[1], maxCountS.getOrDefault(hsb[1],0))
 //            maxCountB.put(hsb[2], maxCountB.getOrDefault(hsb[2],0))
@@ -479,17 +464,14 @@ class  ObjectDetectorAnalyzer  private constructor (
         av1 /= tempRaster.size
         av2 /= tempRaster.size
         av3 /= tempRaster.size
-        var maxav =0f;
+        var maxav = 0f;
         maxav = maxav.coerceAtLeast(av1);
         maxav = maxav.coerceAtLeast(av2);
         maxav = maxav.coerceAtLeast(av3);
         //for example max1
         //pogr = ((max1-maxav)/max1);
 
-        pogr=0.2f
-
-
-
+        pogr = 0.2f
 
 
 //        av1c /= tempRaster.size
@@ -497,31 +479,35 @@ class  ObjectDetectorAnalyzer  private constructor (
 //        av3c /= tempRaster.size
 
         Log.d("COLORCOLOR4", "----------------------------------------------------------")
-        Log.d("COLORCOLOR4", Arrays.toString(arrayOf(maxPointsOfH,maxPointsOfS,maxPointsOfB,pogr)))
-        Log.d("COLORCOLOR4", Arrays.toString(arrayOf(av1,av2,av3,pogr,maxav)))
+        Log.d(
+            "COLORCOLOR4",
+            Arrays.toString(arrayOf(maxPointsOfH, maxPointsOfS, maxPointsOfB, pogr))
+        )
+        Log.d("COLORCOLOR4", Arrays.toString(arrayOf(av1, av2, av3, pogr, maxav)))
         Log.d("COLORCOLOR4", Arrays.toString(arrayOf(min1, max1, min2, max2, min3, max3)))
 
-        Log.d("COLORCOLOR4", Arrays.toString(arrayOf(av1c,av2c,av3c)))
+        Log.d("COLORCOLOR4", Arrays.toString(arrayOf(av1c, av2c, av3c)))
         Log.d("COLORCOLOR4", Arrays.toString(arrayOf(min1c, max1c, min2c, max2c, min3c, max3c)))
         Log.d("COLORCOLOR4", "----------------------------------------------------------")
 
 
-        return arrayOf(maxPointsOfH,maxPointsOfS,maxPointsOfB,pogr)
+        return arrayOf(maxPointsOfH, maxPointsOfS, maxPointsOfB, pogr)
     }
 
-    private fun findhand(rgbBitmap :Bitmap): Array<IntArray> {
+    private fun findhand(rgbBitmap: Bitmap): Array<IntArray> {
 
         val height = rgbBitmap.height
         val width = rgbBitmap.width
-        var pixelRaster = IntArray( width * height)//pixel raster for initial cam image
+        var pixelRaster = IntArray(width * height)//pixel raster for initial cam image
         var tempRaster = IntArray(width * height)
         //Initialize rasters
         //Initialize rasters
 
-        ImageUtil.storePixels( rgbBitmap, pixelRaster!!)
-        ImageUtil.storePixels( rgbBitmap, tempRaster!!)
+        ImageUtil.storePixels(rgbBitmap, pixelRaster!!)
+        ImageUtil.storePixels(rgbBitmap, tempRaster!!)
 
-        var pixelRaster2D = Array(height) { IntArray(width)} //converting pixelRaster to 2D format to check for surrounding pixels
+        var pixelRaster2D =
+            Array(height) { IntArray(width) } //converting pixelRaster to 2D format to check for surrounding pixels
 
         var tempRaster2D = Array(height) { IntArray(width) } //temp raster for initial image
 
@@ -538,7 +524,8 @@ class  ObjectDetectorAnalyzer  private constructor (
             var j = 0
             while (j < width) {
                 tempRaster2D!![i][j] = pixelRaster!![index]
-                val color: IntArray = hexToRGB(pixelRaster!!.get(index))!! //convert hex arbg integer to RGB array
+                val color: IntArray =
+                    hexToRGB(pixelRaster!!.get(index))!! //convert hex arbg integer to RGB array
                 val hsb = FloatArray(3) // HSB array
                 RGBtoHSB(color[0], color[1], color[2], hsb) //convert RGB to HSB array
 
@@ -645,23 +632,20 @@ class  ObjectDetectorAnalyzer  private constructor (
 
         return pixelRaster2D!!
     }
+
     val koef = 0.20f
     fun strictSkinPixelRule(hsb: FloatArray): Boolean {
         //Log.d("handbound",("${hsb[0]}  ${hsb[1]} ${hsb[2]}").toString())
-        return  myMinMaxColorsflow.value!![0]-myMinMaxColorsflow.value!![3] <hsb[0] &&
-                hsb[0] < myMinMaxColorsflow.value!![0]+myMinMaxColorsflow.value!![3] &&
-                hsb[1] > myMinMaxColorsflow.value!![1]-myMinMaxColorsflow.value!![3] &&
-                hsb[1] < myMinMaxColorsflow.value!![1]+myMinMaxColorsflow.value!![3] &&
-                hsb[2] >myMinMaxColorsflow.value!![2]-myMinMaxColorsflow.value!![3] &&
-                myMinMaxColorsflow.value!![2]+myMinMaxColorsflow.value!![3]>hsb[2]
-        /*myMinMaxColorsflow.value!![0] <hsb[0]*koef &&
-                hsb[0] < myMinMaxColorsflow.value!![1]*koef &&
-                hsb[1]*koef > myMinMaxColorsflow.value!![2] &&
-                hsb[1] < myMinMaxColorsflow.value!![3]*koef &&
-                hsb[2]*koef >myMinMaxColorsflow.value!![4] &&
-                myMinMaxColorsflow.value!![5]*koef>hsb[2] &&*/
+        return myMinMaxColorsflow.value!![0] - myMinMaxColorsflow.value!![3] < hsb[0] &&
+                hsb[0] < myMinMaxColorsflow.value!![0] + myMinMaxColorsflow.value!![3] &&
+                hsb[1] > myMinMaxColorsflow.value!![1] - myMinMaxColorsflow.value!![3] &&
+                hsb[1] < myMinMaxColorsflow.value!![1] + myMinMaxColorsflow.value!![3] &&
+                hsb[2] > myMinMaxColorsflow.value!![2] - myMinMaxColorsflow.value!![3] &&
+                myMinMaxColorsflow.value!![2] + myMinMaxColorsflow.value!![3] > hsb[2]
+
 
     }
+
     fun looseSkinPixelRule(hsb: FloatArray): Boolean {
         return hsb[0] < 0.4f && hsb[1] < 1f && hsb[2] < 0.7f
     }
@@ -693,7 +677,8 @@ class  ObjectDetectorAnalyzer  private constructor (
             val redc = (cmax - r).toFloat() / (cmax - cmin).toFloat()
             val greenc = (cmax - g).toFloat() / (cmax - cmin).toFloat()
             val bluec = (cmax - b).toFloat() / (cmax - cmin).toFloat()
-            hue = if (r == cmax) bluec - greenc else if (g == cmax) 2.0f + redc - bluec else 4.0f + greenc - redc
+            hue =
+                if (r == cmax) bluec - greenc else if (g == cmax) 2.0f + redc - bluec else 4.0f + greenc - redc
             hue /= 6.0f
             if (hue < 0) hue = hue + 1.0f
         }
@@ -702,6 +687,7 @@ class  ObjectDetectorAnalyzer  private constructor (
         hsbvals[2] = brightness
         return hsbvals
     }
+
     fun Rectangle.intersects(bounds: Rectangle): Boolean {
         return this.x >= bounds.x && this.x < bounds.x + bounds.width && this.y >= bounds.y && this.y < bounds.y + bounds.height
     }

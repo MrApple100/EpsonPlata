@@ -9,4 +9,5 @@
     <string name="RecognizeColor">Определение цвета</string>
     <string name="MayStart">Можно начинать</string>
     <string name="WorkWithBarcode">Работа с баркодом</string>
+    <string name="ManualSetting">Ручная настройка</string>
 </resources>
