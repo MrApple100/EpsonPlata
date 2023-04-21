@@ -1,2 +1,5 @@
 rootProject.name='EpsonPlataCamera'
 include ':app'
+include ':library-client-rtsp'
+include ':rtspserver'
+include ':EpsonRTSP'

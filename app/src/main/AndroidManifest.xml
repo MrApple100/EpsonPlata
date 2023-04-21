@@ -32,7 +32,7 @@
         tools:ignore="GoogleAppIndexingWarning">
 
         <activity
-            android:name="ru.object.epsoncamera.MoverioCameraSampleFragment"
+            android:name="ru.object.epsoncamera.EpsonLocal.MoverioCameraSampleFragment"
             android:label="@string/activity_name_detection"
             android:screenOrientation="landscape">
             <intent-filter>
