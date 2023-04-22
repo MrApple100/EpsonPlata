@@ -1,4 +1,4 @@
-apply plugin: 'com.android.application'
+apply plugin: 'com.android.library'
 apply plugin: 'kotlin-android'
 apply plugin: 'kotlin-parcelize'
 apply from: '../constants.gradle'
@@ -8,8 +8,7 @@ android {
     compileSdkVersion 32
 
     defaultConfig {
-        applicationId "com.pedro.sample"
-        minSdkVersion 16
+        minSdkVersion 24
         targetSdkVersion 32
         versionCode version_code
         versionName version_name

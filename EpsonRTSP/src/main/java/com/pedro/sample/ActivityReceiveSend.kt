@@ -1,4 +1,4 @@
-package ru.`object`.epsoncamera.EpsonRTSP
+package com.pedro.sample
 
 import android.content.res.Configuration
 import android.os.Bundle

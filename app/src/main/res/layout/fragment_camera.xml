@@ -33,7 +33,7 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent" />
 
-        <ru.object.epsoncamera.EpsonLocal.view.RecognitionResultOverlayView
+        <ru.object.epsoncamera.epsonLocal.view.RecognitionResultOverlayView
             android:id="@+id/result_overlay2"
             android:layout_width="match_parent"
             android:layout_height="match_parent" />

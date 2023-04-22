@@ -10,4 +10,7 @@
     <string name="MayStart">Можно начинать</string>
     <string name="WorkWithBarcode">Работа с баркодом</string>
     <string name="ManualSetting">Ручная настройка</string>
+
+    <string name="camera_demo">Camera Demo</string>
+
 </resources>
