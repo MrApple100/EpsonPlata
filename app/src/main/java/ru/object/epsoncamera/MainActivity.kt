@@ -1,4 +1,4 @@
-package ru.`object`.epsoncamera.epsonLocal
+package ru.`object`.epsoncamera
 
 import android.Manifest
 import android.app.Activity
@@ -11,7 +11,9 @@ import android.view.WindowManager
 import android.widget.Button
 import android.widget.Toast
 import androidx.core.app.ActivityCompat
-import com.pedro.sample.ActivityReceiveSend
+import ru.`object`.epsoncamera.epsonRTSP.ActivityReceiveSend
+import ru.`object`.epsoncamera.epsonLocal.MoverioCameraSampleFragment
+import ru.`object`.epsoncamera.epsonLocal.R
 
 class MainActivity : Activity() {
 
@@ -26,7 +28,7 @@ class MainActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-        setContentView(R.layout. activity_main)
+        setContentView(R.layout.activity_main)
         b_Epson_Rtsp = findViewById(R.id.b_Epson_Rtsp)
         b_Epson_Rtsp.setOnClickListener {
             if (!hasPermissions(this, *PERMISSIONS)) {

@@ -33,7 +33,7 @@
         android:theme="@style/AppTheme"
         tools:ignore="GoogleAppIndexingWarning">
 
-        <activity android:name="ru.object.epsoncamera.epsonLocal.MainActivity"
+        <activity android:name="ru.object.epsoncamera.epsonLocal.ru.object.epsoncamera.MainActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -48,7 +48,7 @@
         </activity>
 
         <activity
-            android:name="com.pedro.sample.ActivityReceiveSend"
+            android:name="ru.object.epsoncamera.epsonRTSP.ActivityReceiveSend"
             >
 
         </activity>

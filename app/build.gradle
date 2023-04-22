@@ -3,7 +3,10 @@ plugins {
     id 'kotlin-android'
     id 'kotlin-parcelize'
     id 'kotlin-kapt'
+
 }
+apply from: '../constants.gradle'
+
 
 android {
     compileSdkVersion 32
@@ -11,7 +14,7 @@ android {
     defaultConfig {
         applicationId "ru.object.epsoncamera.epsonLocal"
         minSdkVersion 24
-        targetSdkVersion 32
+        targetSdkVersion 30
         versionCode 1
         versionName "1.0"
 
@@ -104,5 +107,11 @@ dependencies {
     // Date time picker
     implementation 'com.github.florent37:singledateandtimepicker:2.2.6'
 
+
+    //Navigation
+    implementation "androidx.navigation:navigation-fragment-ktx:${androidXNavigationVersion}"
+    implementation "androidx.navigation:navigation-ui-ktx:${androidXNavigationVersion}"
+    implementation "androidx.navigation:navigation-fragment-ktx:${androidXNavigationVersion}"
+    implementation "androidx.navigation:navigation-ui-ktx:${androidXNavigationVersion}"
 
 }
