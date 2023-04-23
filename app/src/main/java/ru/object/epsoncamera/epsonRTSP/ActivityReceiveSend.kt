@@ -1,24 +1,29 @@
 package ru.`object`.epsoncamera.epsonRTSP
 
+import android.content.Context
 import android.content.res.Configuration
 import android.os.Bundle
 import android.util.Log
+import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.navigation.findNavController
 import androidx.navigation.ui.setupWithNavController
-import com.epson.moverio.hardware.camera.CameraProperty
-import com.epson.moverio.hardware.camera.CaptureDataCallback
-import com.epson.moverio.hardware.camera.CaptureDataCallback2
-import com.epson.moverio.hardware.camera.CaptureStateCallback2
+import com.epson.moverio.hardware.camera.*
+import com.epson.moverio.system.DeviceManager
 import com.epson.moverio.system.HeadsetStateCallback
 import com.epson.moverio.util.PermissionGrantResultCallback
 import com.epson.moverio.util.PermissionHelper
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.google.android.material.snackbar.Snackbar
+import com.google.zxing.Result
 import com.pedro.sample.R
+import ru.`object`.epsoncamera.domain.CalcurationRate
 import ru.`object`.epsoncamera.epsonLocal.MoverioCameraSampleFragment
 import ru.`object`.epsoncamera.epsonLocal.camera.ObjectDetectorAnalyzer
+import ru.`object`.epsoncamera.epsonLocal.view.RecognitionResultOverlayView
+import ru.`object`.epsoncamera.epsonLocal.view.Scenery
+import java.io.IOException
 import java.nio.ByteBuffer
 import java.util.*
 
@@ -26,6 +31,31 @@ class ActivityReceiveSend : AppCompatActivity(), CaptureStateCallback2,
     CaptureDataCallback, CaptureDataCallback2, PermissionGrantResultCallback, HeadsetStateCallback {
 
     private val TAG = this.javaClass.simpleName
+    private var mCameraManager: CameraManager? = null
+    private var mCameraDevice: CameraDevice? = null
+    private var mDeviceManager: DeviceManager? = null
+
+    private val mCaptureStateCallback2: CaptureStateCallback2 = this
+    private val mCaptureDataCallback: CaptureDataCallback = this
+
+    private var mTextView_framerate: TextView? = null
+    private var mCalcurationRate_framerate: CalcurationRate? = null
+
+    private var mTextView_captureState: TextView? = null
+    private var mTextView_test: TextView? = null
+
+    private val cameraProperty: String
+        private get() {
+            var str = ""
+            val property = mCameraDevice!!.property
+            str += "info :" + property.captureSize[0] + ", " + property.captureSize[1] + ", " + property.captureFps + ", " + property.captureDataFormat + System.lineSeparator()
+            str += "expo :" + property.exposureMode + ", " + property.exposureStep + ", bright:" + property.brightness + System.lineSeparator()
+            str += "WB   :" + property.whiteBalanceMode + ", PLF  :" + property.powerLineFrequencyControlMode + ", Indi :" + property.indicatorMode + System.lineSeparator()
+            str += "Focus:" + property.focusMode + ", " + property.focusDistance + ", Gain  :" + property.gain + System.lineSeparator()
+            return str
+        }
+
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -40,32 +70,86 @@ class ActivityReceiveSend : AppCompatActivity(), CaptureStateCallback2,
             navView.setupWithNavController(navController)
         }
 
+        ActivityReceiveSend.mContext=this
+        ActivityReceiveSend.instance=this
+        mTextView_framerate = binding.textViewFramerate
+        mCalcurationRate_framerate = CalcurationRate(mTextView_framerate)
+        mCalcurationRate_framerate!!.start()
+    }
+
+    override fun onStart() {
+        super.onStart()
+        //open
+        try {
+            mCameraDevice = mCameraManager!!.open(
+                mCaptureStateCallback2,
+                mCaptureDataCallback,
+                mSurfaceView_preview!!.holder
+            )
+        } catch (e: IOException) {
+            e.printStackTrace()
+        }
+
+
+    }
+    public override fun onResume() {
+        super.onResume()
+        mDeviceManager!!.registerHeadsetStateCallback(this)
+        //  Toast.makeText(mContext,"Resume",Toast.LENGTH_SHORT).show();
+    }
+
+    public override fun onPause() {
+        super.onPause()
+        mDeviceManager!!.unregisterHeadsetStateCallback(this) //было закомменчено WHY?????
+        //   Toast.makeText(mContext,"Pause",Toast.LENGTH_SHORT).show();
+    }
+
+    override fun onStop() {
+        super.onStop()
+
+        //StopPreview
+        mCameraDevice!!.stopPreview()
+
+        //StopCapture
+        mCameraDevice!!.stopCapture()
+
+
+        //close
+        mCameraManager!!.close(mCameraDevice)
+        mCameraDevice = null
+
     }
 
     override fun onCaptureData(timestamp: Long, datamass: ByteArray) {
         mCalcurationRate_framerate!!.updata()
         try {
-            ObjectDetectorAnalyzer.datamass.value = datamass
-            threadToDATA.execute {
-                try {
-                    if (ObjectDetectorAnalyzer.datamass.value.size > 0) analyzer?.analyze(
-                        ObjectDetectorAnalyzer.datamass.value,
-                        mCameraDevice!!.property.captureSize[0],
-                        mCameraDevice!!.property.captureSize[1]
-                    )
-                } catch (ex: Exception) {
-                    println(Arrays.toString(ex.stackTrace))
-                }
-            }
+
+                            mCameraDevice!!.property.captureSize[0]
+                            mCameraDevice!!.property.captureSize[1]
+
+
         } catch (e: Exception) {
             Log.d("ERRORGLOBAL", e.localizedMessage)
         }
     }
 
     override fun onCameraOpened() {
+
+        //Frame 1920x1080 30fps
+        val item= mCameraDevice!!.property.supportedCaptureInfo[6]
+
+        val property = mCameraDevice!!.property
+        property.setCaptureSize(item[0], item[1])
+        property.captureFps = item[2]
+        mCameraDevice!!.property = property
+
+        //StartCapture
+        mCameraDevice!!.startCapture()
+
+
         Log.d(TAG, "onCameraOpened")
         mTextView_captureState!!.text = "onCameraOpened"
-        Toast.makeText(MoverioCameraSampleFragment.mContext, "onCameraOpened", Toast.LENGTH_SHORT).show()
+        Toast.makeText(ActivityReceiveSend.mContext, "onCameraOpened", Toast.LENGTH_SHORT).show()
         initView(mCameraDevice!!.property)
         mTextView_test!!.text = cameraProperty
     }
@@ -73,14 +157,17 @@ class ActivityReceiveSend : AppCompatActivity(), CaptureStateCallback2,
     override fun onCameraClosed() {
         Log.d(TAG, "onCameraClosed")
         mTextView_captureState!!.text = "onCameraClosed"
-        Toast.makeText(MoverioCameraSampleFragment.mContext, "onCameraClosed", Toast.LENGTH_SHORT).show()
+        Toast.makeText(ActivityReceiveSend.mContext, "onCameraClosed", Toast.LENGTH_SHORT).show()
         mTextView_test!!.text = cameraProperty
     }
 
     override fun onCaptureStarted() {
+        //StartPreview
+        mCameraDevice!!.startPreview()
+
         Log.d(TAG, "onCaptureStarted")
         mTextView_captureState!!.text = "onCaptureStarted"
-        Toast.makeText(MoverioCameraSampleFragment.mContext, "onCameraStarted", Toast.LENGTH_SHORT).show()
+        Toast.makeText(ActivityReceiveSend.mContext, "onCameraStarted", Toast.LENGTH_SHORT).show()
         mTextView_test!!.text = cameraProperty
     }
 
@@ -94,7 +181,7 @@ class ActivityReceiveSend : AppCompatActivity(), CaptureStateCallback2,
     override fun onPreviewStarted() {
         Log.d(TAG, "onPreviewStarted")
         mTextView_captureState!!.text = "onPreviewStarted"
-        Toast.makeText(MoverioCameraSampleFragment.mContext, "onPreviewStarted", Toast.LENGTH_SHORT).show()
+        Toast.makeText(ActivityReceiveSend.mContext, "onPreviewStarted", Toast.LENGTH_SHORT).show()
         mTextView_test!!.text = cameraProperty
     }
 
@@ -108,14 +195,14 @@ class ActivityReceiveSend : AppCompatActivity(), CaptureStateCallback2,
     override fun onRecordStarted() {
         Log.d(TAG, "onRecordStarted")
         mTextView_captureState!!.text = "onRecordStarted"
-        Toast.makeText(MoverioCameraSampleFragment.mContext, "onRecordStarted", Toast.LENGTH_SHORT).show()
+        Toast.makeText(ActivityReceiveSend.mContext, "onRecordStarted", Toast.LENGTH_SHORT).show()
         mTextView_test!!.text = cameraProperty
     }
 
     override fun onRecordStopped() {
         Log.d(TAG, "onRecordStopped")
         mTextView_captureState!!.text = "onRecordStopped"
-        Toast.makeText(MoverioCameraSampleFragment.mContext, "onRecordStopped", Toast.LENGTH_SHORT).show()
+        Toast.makeText(ActivityReceiveSend.mContext, "onRecordStopped", Toast.LENGTH_SHORT).show()
         mTextView_test!!.text = cameraProperty
     }
 
@@ -144,12 +231,7 @@ class ActivityReceiveSend : AppCompatActivity(), CaptureStateCallback2,
             Log.w(TAG, "CameraProperty is null...")
             return
         }
-        mSpinner_captureInfo!!.adapter = CaptureInfoAdapter(
-            MoverioCameraSampleFragment.mContext,
-            android.R.layout.simple_spinner_item,
-            mCameraDevice!!.property.supportedCaptureInfo
-        )
-        mSeekBar_brightness!!.max = property.brightnessMax - property.brightnessMin
+
         property = mCameraDevice!!.property
         property.brightness = 0
         property.captureDataFormat = CameraProperty.CAPTURE_DATA_FORMAT_ARGB_8888
@@ -160,8 +242,6 @@ class ActivityReceiveSend : AppCompatActivity(), CaptureStateCallback2,
     private fun updateView() {
         val property = mCameraDevice!!.property ?: return
 
-        // brightness
-        mSeekBar_brightness!!.progress = property.brightnessMin + property.brightness
     }
 
     override fun onHeadsetAttached() {
@@ -179,5 +259,11 @@ class ActivityReceiveSend : AppCompatActivity(), CaptureStateCallback2,
 
     override fun onHeadsetTemperatureError() {
         Snackbar.make(window.decorView, "Headset temperature error...", Snackbar.LENGTH_SHORT).show()
+    }
+
+    companion object {
+        private lateinit var instance: ActivityReceiveSend
+        private lateinit var mContext: Context
+
     }
 }

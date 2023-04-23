@@ -37,17 +37,11 @@ class FragmentSend : Fragment(), ConnectCheckerRtsp, View.OnClickListener,
     binding = FragmentSendBinding.inflate(inflater, container, false)
 
     requireActivity().window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-   // setContentView(R.layout.activity_camera_demo)
-   // folder = File(getExternalFilesDir(null)!!.absolutePath + "/rtmp-rtsp-stream-client-java")
-    //button = findViewById(R.id.b_start_stop)
+
     binding.bStartStop.setOnClickListener(this)
-    //bRecord = findViewById(R.id.b_record)
-    binding.bRecord.setOnClickListener(this)
-    binding.switchCamera.setOnClickListener(this)
-  //  surfaceView = findViewById(R.id.switch_camera)
+
     rtspServerCamera1 = RtspServerCamera1(binding.surfaceView, this, 1935)
     binding.surfaceView.holder.addCallback(this)
- //   tv_url = findViewById(R.id.tv_url);
     return binding.root
   }
 
@@ -110,54 +104,7 @@ class FragmentSend : Fragment(), ConnectCheckerRtsp, View.OnClickListener,
         rtspServerCamera1.stopStream()
        binding.tvUrl.text = ""
       }
-      R.id.switch_camera -> try {
-        rtspServerCamera1.switchCamera()
-      } catch (e: CameraOpenException) {
-        Toast.makeText(requireContext(), e.message, Toast.LENGTH_SHORT).show()
-      }
 
-      R.id.b_record -> {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2) {
-          if (!rtspServerCamera1.isRecording) {
-            try {
-              if (!folder.exists()) {
-                folder.mkdir()
-              }
-              val sdf = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault())
-              currentDateAndTime = sdf.format(Date())
-              if (!rtspServerCamera1.isStreaming) {
-                if (rtspServerCamera1.prepareAudio() && rtspServerCamera1.prepareVideo()) {
-                  rtspServerCamera1.startRecord(folder.absolutePath + "/" + currentDateAndTime + ".mp4")
-                 binding.bRecord.setText(R.string.stop_record)
-                  Toast.makeText(requireContext(), "Recording... ", Toast.LENGTH_SHORT).show()
-                } else {
-                  Toast.makeText(
-                   requireContext(), "Error preparing stream, This device cant do it",
-                    Toast.LENGTH_SHORT
-                  ).show()
-                }
-              } else {
-                rtspServerCamera1.startRecord(folder.absolutePath + "/" + currentDateAndTime + ".mp4")
-               binding.bRecord.setText(R.string.stop_record)
-                Toast.makeText(requireContext(), "Recording... ", Toast.LENGTH_SHORT).show()
-              }
-            } catch (e: IOException) {
-              rtspServerCamera1.stopRecord()
-             binding.bRecord.setText(R.string.start_record)
-              Toast.makeText(requireContext(), e.message, Toast.LENGTH_SHORT).show()
-            }
-          } else {
-            rtspServerCamera1.stopRecord()
-           binding.bRecord.setText(R.string.start_record)
-            Toast.makeText(
-             requireContext(), "file " + currentDateAndTime + ".mp4 saved in " + folder.absolutePath,
-              Toast.LENGTH_SHORT
-            ).show()
-          }
-        } else {
-          Toast.makeText(requireContext(), "You need min JELLY_BEAN_MR2(API 18) for do it...", Toast.LENGTH_SHORT).show()
-        }
-      }
       else -> {
       }
     }
