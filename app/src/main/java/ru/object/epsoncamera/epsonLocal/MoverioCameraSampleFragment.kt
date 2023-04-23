@@ -92,8 +92,7 @@ class MoverioCameraSampleFragment : Activity(), CaptureStateCallback2,
     private var bLoadHSV: Button? = null
     public override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        val binding: FragmentCameraBinding =
-            DataBindingUtil.setContentView(this, R.layout.fragment_camera)
+        val binding: FragmentCameraBinding = DataBindingUtil.setContentView(this, R.layout.fragment_camera)
         val bindingBurgerMenu = binding.Iburgermenu
         mPermissionHelper = PermissionHelper(this)
         mDeviceManager = DeviceManager(this)

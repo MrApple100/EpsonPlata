@@ -30,12 +30,10 @@ abstract class EpsonBase(
     private val cameraManager: EpsonApiManager
     protected var videoEncoder: VideoEncoder? = null
     private var isStreaming = false
-    protected var audioInitialized = false
     private var isOnPreview = false
     private var previewWidth = 0
     private var previewHeight = 0
     private val fpsListener = FpsListener()
-
 
 
     private fun init() {
@@ -143,11 +141,9 @@ abstract class EpsonBase(
             previewHeight = height
             videoEncoder!!.fps = fps
             videoEncoder!!.rotation = rotation
-            if (Build.VERSION.SDK_INT >= 18) {
-                cameraManager.setSurfaceTexture(glInterface!!.surfaceTexture)
-            }
+
             cameraManager.setRotation(rotation)
-            cameraManager.start(cameraFacing, width, height, videoEncoder!!.fps)
+            cameraManager.start( width, height, videoEncoder!!.fps)
             isOnPreview = true
         } else {
             Log.e(EpsonBase.Companion.TAG, "Streaming or preview started, ignored")
@@ -163,18 +159,15 @@ abstract class EpsonBase(
      * @param height of preview in px.
      * @param rotation camera rotation (0, 90, 180, 270). Recommended: [ ][com.pedro.encoder.input.video.CameraHelper.getCameraOrientation]
      */
-    fun startPreview(cameraId: Int, width: Int, height: Int, fps: Int, rotation: Int) {
+    fun startPreview(width: Int, height: Int, fps: Int, rotation: Int) {
         if (!isStreaming && !isOnPreview) {
             previewWidth = width
             previewHeight = height
             videoEncoder!!.fps = fps
             videoEncoder!!.rotation = rotation
-            if (Build.VERSION.SDK_INT >= 18) {
 
-                cameraManager.setSurfaceTexture(glInterface!!.surfaceTexture)
-            }
             cameraManager.setRotation(rotation)
-            cameraManager.start(cameraId, width, height, videoEncoder!!.fps)
+            cameraManager.start( width, height, videoEncoder!!.fps)
             isOnPreview = true
         } else {
             Log.e(EpsonBase.Companion.TAG, "Streaming or preview started, ignored")
@@ -182,30 +175,13 @@ abstract class EpsonBase(
     }
 
     fun startPreview(
-        cameraFacing: Facing? = this.cameraFacing,
         width: Int = videoEncoder!!.width,
         height: Int = videoEncoder!!.height,
         rotation: Int = CameraHelper.getCameraOrientation(context)
     ) {
-        startPreview(cameraFacing, width, height, videoEncoder!!.fps, rotation)
+        startPreview( width, height, videoEncoder!!.fps, rotation)
     }
 
-    fun startPreview(
-        cameraFacing: Int,
-        width: Int = videoEncoder!!.width,
-        height: Int = videoEncoder!!.height,
-        rotation: Int = CameraHelper.getCameraOrientation(context)
-    ) {
-        startPreview(cameraFacing, width, height, videoEncoder!!.fps, rotation)
-    }
-
-    fun startPreview(cameraFacing: Facing?, rotation: Int) {
-        startPreview(cameraFacing, videoEncoder!!.width, videoEncoder!!.height, rotation)
-    }
-
-    fun startPreview(width: Int, height: Int) {
-        startPreview(cameraFacing, width, height)
-    }
 
     /**
      * Stop camera preview. Ignored if streaming or already stopped. You need call it after
@@ -222,7 +198,7 @@ abstract class EpsonBase(
             previewWidth = 0
             previewHeight = 0
         } else {
-            Log.e(EpsonBase.Tag, "Streaming or preview stopped, ignored")
+            Log.e(EpsonBase.TAG, "Streaming or preview stopped, ignored")
         }
     }
 
@@ -234,7 +210,7 @@ abstract class EpsonBase(
 
     @RequiresApi(api = Build.VERSION_CODES.JELLY_BEAN_MR2)
     @Throws(IOException::class)
-    fun startStreamAndRecord(url: String?, path: String?) {
+    fun startStreamAndRecord(url: String, path: String) {
         startStreamAndRecord(url, path, null)
     }
 
@@ -265,7 +241,7 @@ abstract class EpsonBase(
 
     private fun startEncoders() {
         videoEncoder!!.start()
-        prepareGlView()
+        //prepareGlView()
         cameraManager.setRotation(videoEncoder!!.rotation)
         if (!cameraManager.isRunning && videoEncoder!!.width != previewWidth
             || videoEncoder!!.height != previewHeight
@@ -283,9 +259,9 @@ abstract class EpsonBase(
         }
     }
 
-    private fun prepareGlView() {
-        cameraManager.setSurfaceTexture(glInterface!!.surfaceTexture)
-    }
+//    private fun prepareGlView() {
+//        cameraManager.setSurfaceTexture(glInterface!!.surfaceTexture)
+//    }
 
     protected abstract fun stopStreamRtp()
 
@@ -308,127 +284,114 @@ abstract class EpsonBase(
     init {
         context = surfaceView.context
         cameraManager = EpsonApiManager(surfaceView, this)
+        cameraManager.registerHeadsetStateCallback()
         init()
     }
 
 
-/**
- * Retries to connect with the given delay. You can pass an optional backupUrl
- * if you'd like to connect to your backup server instead of the original one.
- * Given backupUrl replaces the original one.
- */
-fun reTry(delay: Long, reason: String?, backupUrl: String? = null): Boolean {
-    val result = shouldRetry(reason)
-    if (result) {
-        requestKeyFrame()
-        reConnect(delay, backupUrl)
+    /**
+     * Retries to connect with the given delay. You can pass an optional backupUrl
+     * if you'd like to connect to your backup server instead of the original one.
+     * Given backupUrl replaces the original one.
+     */
+    fun reTry(delay: Long, reason: String?, backupUrl: String? = null): Boolean {
+        val result = shouldRetry(reason)
+        if (result) {
+            requestKeyFrame()
+            reConnect(delay, backupUrl)
+        }
+        return result
     }
-    return result
-}
 
-protected abstract fun shouldRetry(reason: String?): Boolean
-abstract fun setReTries(reTries: Int)
-protected abstract fun reConnect(delay: Long, backupUrl: String?)
+    protected abstract fun shouldRetry(reason: String?): Boolean
+    abstract fun setReTries(reTries: Int)
+    protected abstract fun reConnect(delay: Long, backupUrl: String?)
 
-//cache control
-abstract fun hasCongestion(): Boolean
+    //cache control
+    abstract fun hasCongestion(): Boolean
 
-@Throws(RuntimeException::class)
-abstract fun resizeCache(newSize: Int)
+    @Throws(RuntimeException::class)
+    abstract fun resizeCache(newSize: Int)
 
-abstract fun getCacheSize(): Int
+    abstract fun getCacheSize(): Int
 
-abstract fun getSentAudioFrames(): Long
+    abstract fun getSentAudioFrames(): Long
 
-abstract fun getSentVideoFrames(): Long
+    abstract fun getSentVideoFrames(): Long
 
-abstract fun getDroppedAudioFrames(): Long
+    abstract fun getDroppedAudioFrames(): Long
 
-abstract fun getDroppedVideoFrames(): Long
+    abstract fun getDroppedVideoFrames(): Long
 
-abstract fun resetSentAudioFrames()
-abstract fun resetSentVideoFrames()
-abstract fun resetDroppedAudioFrames()
-abstract fun resetDroppedVideoFrames()
+    abstract fun resetSentAudioFrames()
+    abstract fun resetSentVideoFrames()
+    abstract fun resetDroppedAudioFrames()
+    abstract fun resetDroppedVideoFrames()
 
-val supportedFps: List<IntArray>
-    get() = cameraManager.supportedFps
+    /**
+     * Set video bitrate of H264 in bits per second while stream.
+     *
+     * @param bitrate H264 in bits per second.
+     */
+    @RequiresApi(api = Build.VERSION_CODES.KITKAT)
+    fun setVideoBitrateOnFly(bitrate: Int) {
+        videoEncoder!!.setVideoBitrateOnFly(bitrate)
+    }
 
+    /**
+     * Set limit FPS while stream. This will be override when you call to prepareVideo method. This
+     * could produce a change in iFrameInterval.
+     *
+     * @param fps frames per second
+     */
+    fun setLimitFPSOnFly(fps: Int) {
+        videoEncoder!!.fps = fps
+    }
 
-val bitrate: Int
-    get() = videoEncoder!!.bitRate
-val resolutionValue: Int
-    get() = videoEncoder!!.width * videoEncoder!!.height
-val streamWidth: Int
-    get() = videoEncoder!!.width
-val streamHeight: Int
-    get() = videoEncoder!!.height
+    /**
+     * Get record state.
+     *
+     * @return true if recording, false if not recoding.
+     */
 
+    protected abstract fun getAacDataRtp(aacBuffer: ByteBuffer, info: MediaCodec.BufferInfo)
+    override fun getAacData(aacBuffer: ByteBuffer, info: MediaCodec.BufferInfo) {
 
-/**
- * Set video bitrate of H264 in bits per second while stream.
- *
- * @param bitrate H264 in bits per second.
- */
-@RequiresApi(api = Build.VERSION_CODES.KITKAT)
-fun setVideoBitrateOnFly(bitrate: Int) {
-    videoEncoder!!.setVideoBitrateOnFly(bitrate)
-}
+        if (isStreaming) getAacDataRtp(aacBuffer, info)
+    }
 
-/**
- * Set limit FPS while stream. This will be override when you call to prepareVideo method. This
- * could produce a change in iFrameInterval.
- *
- * @param fps frames per second
- */
-fun setLimitFPSOnFly(fps: Int) {
-    videoEncoder!!.fps = fps
-}
+    protected abstract fun onSpsPpsVpsRtp(sps: ByteBuffer, pps: ByteBuffer, vps: ByteBuffer?)
+    override fun onSpsPpsVps(sps: ByteBuffer, pps: ByteBuffer, vps: ByteBuffer) {
+        onSpsPpsVpsRtp(sps.duplicate(), pps.duplicate(), if (vps != null) vps.duplicate() else null)
+    }
 
-/**
- * Get record state.
- *
- * @return true if recording, false if not recoding.
- */
+    protected abstract fun getH264DataRtp(h264Buffer: ByteBuffer, info: MediaCodec.BufferInfo)
+    override fun getVideoData(h264Buffer: ByteBuffer, info: MediaCodec.BufferInfo) {
+        fpsListener.calculateFps()
 
-protected abstract fun getAacDataRtp(aacBuffer: ByteBuffer, info: MediaCodec.BufferInfo)
-override fun getAacData(aacBuffer: ByteBuffer, info: MediaCodec.BufferInfo) {
+        if (isStreaming) getH264DataRtp(h264Buffer, info)
+    }
 
-    if (isStreaming) getAacDataRtp(aacBuffer, info)
-}
+    override fun inputPCMData(frame: Frame) {
+        //  audioEncoder!!.inputPCMData(frame)
+    }
 
-protected abstract fun onSpsPpsVpsRtp(sps: ByteBuffer, pps: ByteBuffer, vps: ByteBuffer?)
-override fun onSpsPpsVps(sps: ByteBuffer, pps: ByteBuffer, vps: ByteBuffer) {
-    onSpsPpsVpsRtp(sps.duplicate(), pps.duplicate(), if (vps != null) vps.duplicate() else null)
-}
+    override fun inputYUVData(frame: Frame) {
+        videoEncoder!!.inputYUVData(frame)
+    }
 
-protected abstract fun getH264DataRtp(h264Buffer: ByteBuffer, info: MediaCodec.BufferInfo)
-override fun getVideoData(h264Buffer: ByteBuffer, info: MediaCodec.BufferInfo) {
-    fpsListener.calculateFps()
+    override fun onVideoFormat(mediaFormat: MediaFormat) {
+        //   recordController!!.setVideoFormat(mediaFormat, !audioInitialized)
+    }
 
-    if (isStreaming) getH264DataRtp(h264Buffer, info)
-}
+    override fun onAudioFormat(mediaFormat: MediaFormat) {
+        //   recordController!!.setAudioFormat(mediaFormat)
+    }
 
-override fun inputPCMData(frame: Frame) {
-    //  audioEncoder!!.inputPCMData(frame)
-}
+    abstract fun setLogs(enable: Boolean)
+    abstract fun setCheckServerAlive(enable: Boolean)
 
-override fun inputYUVData(frame: Frame) {
-    videoEncoder!!.inputYUVData(frame)
-}
-
-override fun onVideoFormat(mediaFormat: MediaFormat) {
-    //   recordController!!.setVideoFormat(mediaFormat, !audioInitialized)
-}
-
-override fun onAudioFormat(mediaFormat: MediaFormat) {
-    //   recordController!!.setAudioFormat(mediaFormat)
-}
-
-abstract fun setLogs(enable: Boolean)
-abstract fun setCheckServerAlive(enable: Boolean)
-
-companion object {
-    private const val TAG = "Camera1Base"
-}
+    companion object {
+        private const val TAG = "Camera1Base"
+    }
 }

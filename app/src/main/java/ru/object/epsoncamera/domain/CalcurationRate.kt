@@ -27,7 +27,8 @@ class CalcurationRate(_textView: TextView?) {
             rate = (count * 1000 / (endTime - startTime)).toFloat()
             startTime = endTime
             count = 0
-            textView!!.text = rate.toString()
+            if(textView!=null)
+                textView!!.text = rate.toString()
         }
     }
 

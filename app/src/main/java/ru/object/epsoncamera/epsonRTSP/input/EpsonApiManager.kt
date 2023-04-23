@@ -2,27 +2,34 @@ package ru.`object`.epsoncamera.epsonRTSP.input
 
 import android.content.Context
 import android.graphics.ImageFormat
-import android.graphics.Rect
 import android.graphics.SurfaceTexture
-import android.hardware.Camera
-import android.hardware.Camera.AutoFocusCallback
-import android.media.CamcorderProfile
 import android.util.Log
-import android.view.MotionEvent
 import android.view.SurfaceView
-import android.view.TextureView
-import android.view.View
+import android.widget.Toast
+import com.epson.moverio.hardware.camera.*
+import com.epson.moverio.system.DeviceManager
+import com.epson.moverio.system.HeadsetStateCallback
 import com.pedro.encoder.input.video.CameraCallbacks
-import com.pedro.encoder.input.video.CameraHelper
-import com.pedro.encoder.input.video.CameraOpenException
 import com.pedro.encoder.input.video.GetCameraData
+import ru.`object`.epsoncamera.domain.CalcurationRate
+import java.io.IOException
+import java.nio.ByteBuffer
 
-class EpsonApiManager {
-    private val TAG = "Camera1ApiManager"
-    private var camera: Camera? = null
-    private var surfaceView: SurfaceView? = null
+class EpsonApiManager : CaptureStateCallback2, CaptureDataCallback, CaptureDataCallback2,
+    HeadsetStateCallback {
+    private var mCalcurationRate_framerate: CalcurationRate? = null
+
+    private var mCameraManager: CameraManager? = null
+    private var mCameraDevice: CameraDevice? = null
+    private var mDeviceManager: DeviceManager? = null
+
+    private val mCaptureStateCallback2: CaptureStateCallback2 = this
+    private val mCaptureDataCallback: CaptureDataCallback = this
+
+    private val TAG = "EpsonApiManager"
+    private lateinit var surfaceView: SurfaceView
     private var surfaceTexture: SurfaceTexture? = null
-    private var getCameraData: GetCameraData? = null
+    private lateinit var getCameraData: GetCameraData
     var isRunning = false
         private set
     var isLanternEnabled = false
@@ -42,8 +49,18 @@ class EpsonApiManager {
         private set
     private var fps = 30
     private var rotation = 0
-    private val imageFormat = ImageFormat.NV21
-    private var yuvBuffer: ByteArray
+    private val imageFormat = ImageFormat.YUV_420_888//n21
+    private lateinit var yuvBuffer: ByteArray
+    private val cameraProperty: String
+        private get() {
+            var str = ""
+            val property = mCameraDevice!!.property
+            str += "info :" + property.captureSize[0] + ", " + property.captureSize[1] + ", " + property.captureFps + ", " + property.captureDataFormat + System.lineSeparator()
+            str += "expo :" + property.exposureMode + ", " + property.exposureStep + ", bright:" + property.brightness + System.lineSeparator()
+            str += "WB   :" + property.whiteBalanceMode + ", PLF  :" + property.powerLineFrequencyControlMode + ", Indi :" + property.indicatorMode + System.lineSeparator()
+            str += "Focus:" + property.focusMode + ", " + property.focusDistance + ", Gain  :" + property.gain + System.lineSeparator()
+            return str
+        }
 
     private var cameraCallbacks: CameraCallbacks? = null
 
@@ -51,7 +68,7 @@ class EpsonApiManager {
     private val sensorOrientation = 0
 
 
-    constructor(surfaceView: SurfaceView, getCameraData: GetCameraData?) {
+    constructor(surfaceView: SurfaceView, getCameraData: GetCameraData) {
         this.surfaceView = surfaceView
         this.getCameraData = getCameraData
         context = surfaceView.context
@@ -66,10 +83,10 @@ class EpsonApiManager {
         this.rotation = rotation
     }
 
-    fun setSurfaceTexture(surfaceTexture: SurfaceTexture?) {
-        this.surfaceTexture = surfaceTexture
-    }
-    
+//    fun setSurfaceTexture(surfaceTexture: SurfaceTexture?) {
+//        this.surfaceTexture = surfaceTexture
+//    }
+
 
     fun start(width: Int, height: Int, fps: Int) {
         this.width = width
@@ -79,38 +96,46 @@ class EpsonApiManager {
         start()
     }
 
-    fun start(facing: Int, width: Int, height: Int, fps: Int) {
-        this.width = width
-        this.height = height
-        this.fps = fps
-        start()
+    fun registerHeadsetStateCallback() {
+        mDeviceManager!!.registerHeadsetStateCallback(this)
+
+    }
+
+    fun unregisterHeadsetStateCallback() {
+        mDeviceManager!!.unregisterHeadsetStateCallback(this)
     }
 
 
     private fun start() {
+        mCalcurationRate_framerate = CalcurationRate(null)
+        mCalcurationRate_framerate!!.start()
 
-
-    }
-
-    fun setPreviewOrientation(orientation: Int) {
-        rotation = orientation
-        if (camera != null && isRunning) {
-            camera!!.stopPreview()
-            camera!!.setDisplayOrientation(orientation)
-            camera!!.startPreview()
+        //open
+        try {
+            mCameraDevice = mCameraManager!!.open(
+                mCaptureStateCallback2,
+                mCaptureDataCallback,
+                surfaceView.holder
+            )
+        } catch (e: IOException) {
+            e.printStackTrace()
         }
-    }
 
+    }
+//
+//    fun setPreviewOrientation(orientation: Int) {
+//        rotation = orientation
+//        if (camera != null && isRunning) {
+//            camera!!.stopPreview()
+//            camera!!.setDisplayOrientation(orientation)
+//            camera!!.startPreview()
+//        }
+//    }
 
 
     fun stop() {
-        if (camera != null) {
-            camera!!.stopPreview()
-            camera!!.setPreviewCallback(null)
-            camera!!.setPreviewCallbackWithBuffer(null)
-            camera!!.release()
-            camera = null
-        }
+        //StopPreview
+        mCameraDevice!!.stopPreview()
         isRunning = false
     }
 
@@ -138,120 +163,161 @@ class EpsonApiManager {
         return closestRange
     }
 
-    fun onPreviewFrame(data: ByteArray, camera: Camera) {
-        getCameraData.inputYUVData(
-            com.pedro.encoder.Frame(
-                data,
-                rotation,
-                facing == CameraHelper.Facing.FRONT && isPortrait,
-                imageFormat
-            )
-        )
-        camera.addCallbackBuffer(yuvBuffer)
-    }
-
-    fun getCameraSize(width: Int, height: Int): Camera.Size {
-        return if (camera != null) {
-            camera!!.Size(width, height)
-        } else {
-            camera = Camera.open(cameraSelect)
-            val size = camera.Size(width, height)
-            camera.release()
-            camera = null
-            size
-        }
-    }
-
-    /**
-     * See: https://developer.android.com/reference/android/graphics/ImageFormat.html to know name of
-     * constant values
-     * Example: 842094169 -> YV12, 17 -> NV21
-     */
-    val cameraPreviewImageFormatSupported: List<Int>
-        get() {
-            val formats: List<Int>
-            if (camera != null) {
-                formats = camera!!.parameters.supportedPreviewFormats
-                for (i in formats) {
-                    Log.i(TAG, "camera format supported: $i")
-                }
-            } else {
-                camera = Camera.open(cameraSelect)
-                formats = camera.getParameters().supportedPreviewFormats
-                camera.release()
-                camera = null
-            }
-            return formats
-        }
-
-    //discard preview more high than device can record
-    private val previewSize: List<Camera.Size>
-        private get() {
-            val previewSizes: MutableList<Camera.Size>
-            val maxSize: Camera.Size
-            if (camera != null) {
-                maxSize = maxEncoderSizeSupported
-                previewSizes = camera!!.parameters.supportedPreviewSizes
-            } else {
-                camera = Camera.open(cameraSelect)
-                maxSize = maxEncoderSizeSupported
-                previewSizes = camera.getParameters().supportedPreviewSizes
-                camera.release()
-                camera = null
-            }
-            //discard preview more high than device can record
-            val iterator = previewSizes.iterator()
-            while (iterator.hasNext()) {
-                val size = iterator.next()
-                if (size.width > maxSize.width || size.height > maxSize.height) {
-                    Log.i(
-                        TAG,
-                        size.width.toString() + "X" + size.height + ", not supported for encoder"
-                    )
-                    iterator.remove()
-                }
-            }
-            return previewSizes
-        }
-
-    /**
-     * @return max size that device can record.
-     */
-    private val maxEncoderSizeSupported: Camera.Size
-        private get() {
-            return if (CamcorderProfile.hasProfile(CamcorderProfile.QUALITY_2160P)) {
-                camera!!.Size(3840, 2160)
-            } else if (CamcorderProfile.hasProfile(CamcorderProfile.QUALITY_1080P)) {
-                camera!!.Size(1920, 1080)
-            } else if (CamcorderProfile.hasProfile(CamcorderProfile.QUALITY_720P)) {
-                camera!!.Size(1280, 720)
-            } else {
-                camera!!.Size(640, 480)
-            }
-        }
-
-
-    val supportedFps: List<IntArray>
-        get() {
-            val supportedFps: List<IntArray>
-            if (camera != null) {
-                supportedFps = camera!!.parameters.supportedPreviewFpsRange
-            } else {
-                camera = Camera.open(cameraSelect)
-                supportedFps = camera.getParameters().supportedPreviewFpsRange
-                camera.release()
-                camera = null
-            }
-            for (range in supportedFps) {
-                range[0] /= 1000
-                range[1] /= 1000
-            }
-            return supportedFps
-        }
-
 
     fun setCameraCallbacks(cameraCallbacks: CameraCallbacks?) {
         this.cameraCallbacks = cameraCallbacks
+    }
+
+
+    override fun onCaptureData(timestamp: Long, datamass: ByteArray) {
+        mCalcurationRate_framerate!!.updata()
+        try {
+
+            mCameraDevice!!.property.captureSize[0]
+            mCameraDevice!!.property.captureSize[1]
+
+
+        } catch (e: Exception) {
+            Log.d("ERRORGLOBAL", e.localizedMessage)
+        }
+
+        //не yuv a rgb
+        getCameraData.inputYUVData(
+            com.pedro.encoder.Frame(datamass, rotation, true, imageFormat)
+        )
+        //camera.addCallbackBuffer(yuvBuffer)
+
+    }
+
+    override fun onCaptureData(timestamp: Long, data: ByteBuffer) {
+        //mTextView_captureState.setText("onCaptureData(ByteBuffer):"+data.limit());
+    }
+
+    override fun onCameraOpened() {
+
+        //Frame 1920x1080 30fps
+        val item = mCameraDevice!!.property.supportedCaptureInfo[6]
+
+        val property = mCameraDevice!!.property
+        property.setCaptureSize(item[0], item[1])
+        property.captureFps = item[2]
+        mCameraDevice!!.property = property
+
+        //StartCapture
+        mCameraDevice!!.startCapture()
+
+
+        Log.d(TAG, "onCameraOpened")
+        //mTextView_captureState!!.text = "onCameraOpened"
+        Toast.makeText(context, "onCameraOpened", Toast.LENGTH_SHORT).show()
+        initView(mCameraDevice!!.property)
+        //  mTextView_test!!.text = cameraProperty
+    }
+
+    private fun initView(property: CameraProperty) {
+        var property: CameraProperty? = property
+        if (null == property) {
+            Log.w(TAG, "CameraProperty is null...")
+            return
+        }
+
+        property = mCameraDevice!!.property
+        property.brightness = 0
+       // property.captureDataFormat = CameraProperty.CAPTURE_DATA_FORMAT_H264
+        property.captureDataFormat = CameraProperty.CAPTURE_DATA_FORMAT_YUY2
+
+        val ret = mCameraDevice!!.setProperty(property)
+        updateView()
+    }
+
+    private fun updateView() {
+        val property = mCameraDevice!!.property ?: return
+
+    }
+
+    override fun onCameraClosed() {
+        Log.d(TAG, "onCameraClosed")
+        // mTextView_captureState!!.text = "onCameraClosed"
+        Toast.makeText(context, "onCameraClosed", Toast.LENGTH_SHORT).show()
+        //  mTextView_test!!.text = cameraProperty
+
+
+        //StopCapture
+        mCameraDevice!!.stopCapture()
+
+
+    }
+
+    override fun onCaptureStarted() {
+        //StartPreview
+        mCameraDevice!!.startPreview()
+
+        Log.d(TAG, "onCaptureStarted")
+        //   mTextView_captureState!!.text = "onCaptureStarted"
+        Toast.makeText(context, "onCameraStarted", Toast.LENGTH_SHORT).show()
+        //  mTextView_test!!.text = cameraProperty
+    }
+
+    override fun onCaptureStopped() {
+        Log.d(TAG, "onCaptureStopped")
+        //  mTextView_captureState!!.text = "onCaptureStopped"
+        Toast.makeText(context, "onCameraStopped", Toast.LENGTH_SHORT).show();
+        //  mTextView_test!!.text = cameraProperty
+
+        //close
+        mCameraManager!!.close(mCameraDevice)
+        mCameraDevice = null
+    }
+
+    override fun onPreviewStarted() {
+        Log.d(TAG, "onPreviewStarted")
+        // mTextView_captureState!!.text = "onPreviewStarted"
+        Toast.makeText(context, "onPreviewStarted", Toast.LENGTH_SHORT).show()
+        //  mTextView_test!!.text = cameraProperty
+    }
+
+    override fun onPreviewStopped() {
+        Log.d(TAG, "onPreviewStopped")
+        // mTextView_captureState!!.text = "onPreviewStopped"
+        //Toast.makeText(mContext,"onPreviewStopped",Toast.LENGTH_SHORT).show();
+        // mTextView_test!!.text = cameraProperty
+    }
+
+    override fun onRecordStarted() {
+        Log.d(TAG, "onRecordStarted")
+        //  mTextView_captureState!!.text = "onRecordStarted"
+        Toast.makeText(context, "onRecordStarted", Toast.LENGTH_SHORT).show()
+        //  mTextView_test!!.text = cameraProperty
+    }
+
+    override fun onRecordStopped() {
+        Log.d(TAG, "onRecordStopped")
+        // mTextView_captureState!!.text = "onRecordStopped"
+        Toast.makeText(context, "onRecordStopped", Toast.LENGTH_SHORT).show()
+        // mTextView_test!!.text = cameraProperty
+    }
+
+    override fun onPictureCompleted() {
+        Log.d(TAG, "onPictureCompleted")
+        // mTextView_captureState!!.text = "onPictureCompleted"
+        // mTextView_test!!.text = cameraProperty
+    }
+
+    override fun onHeadsetAttached() {
+        Toast.makeText(context, "Headset attached...", Toast.LENGTH_SHORT).show()
+    }
+
+    override fun onHeadsetDetached() {
+        Toast.makeText(context, "Headset detached...", Toast.LENGTH_SHORT).show()
+        mDeviceManager!!.close()
+    }
+
+    override fun onHeadsetDisplaying() {
+        Toast.makeText(context, "Headset displaying...", Toast.LENGTH_SHORT).show()
+    }
+
+    override fun onHeadsetTemperatureError() {
+        Toast.makeText(context, "Headset temperature error...", Toast.LENGTH_SHORT).show()
     }
 
 }

@@ -65,7 +65,7 @@ public class VideoEncoder extends BaseEncoder implements GetCameraData {
   //for disable video
   private final FpsLimiter fpsLimiter = new FpsLimiter();
   private String type = CodecUtil.H264_MIME;
-  private FormatVideoEncoder formatVideoEncoder = FormatVideoEncoder.YUV420Dynamical;
+  private FormatVideoEncoder formatVideoEncoder = FormatVideoEncoder.YUV422PLANAR;//YUV420
   private int avcProfile = -1;
   private int avcProfileLevel = -1;
 

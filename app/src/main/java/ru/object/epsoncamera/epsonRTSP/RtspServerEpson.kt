@@ -61,7 +61,7 @@ open class RtspServerEpson : EpsonBase {
         rtspServer.sendAudio(aacBuffer, info)
     }
 
-    override fun onSpsPpsVpsRtp(sps: ByteBuffer, pps: ByteBuffer, vps: ByteBuffer) {
+    override fun onSpsPpsVpsRtp(sps: ByteBuffer, pps: ByteBuffer, vps: ByteBuffer?) {
         val newSps = sps.duplicate()
         val newPps = pps.duplicate()
         val newVps = vps?.duplicate()
