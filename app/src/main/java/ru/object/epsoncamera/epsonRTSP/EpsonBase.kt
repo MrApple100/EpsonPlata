@@ -11,7 +11,6 @@ import com.pedro.encoder.Frame
 import com.pedro.encoder.audio.GetAacData
 import com.pedro.encoder.input.audio.*
 import com.pedro.encoder.input.video.*
-import com.pedro.encoder.input.video.CameraHelper.Facing
 import com.pedro.encoder.utils.CodecUtil
 import com.pedro.encoder.video.FormatVideoEncoder
 import com.pedro.encoder.video.GetVideoData
@@ -29,7 +28,7 @@ abstract class EpsonBase(
     private val context: Context
     private val cameraManager: EpsonApiManager
     protected var videoEncoder: VideoEncoder? = null
-    private var isStreaming = false
+    var isStreaming = false
     private var isOnPreview = false
     private var previewWidth = 0
     private var previewHeight = 0
@@ -84,8 +83,8 @@ abstract class EpsonBase(
         rotation: Int, avcProfile: Int = -1, avcProfileLevel: Int = -1
     ): Boolean {
         if (isOnPreview && width != previewWidth || height != previewHeight || fps != videoEncoder!!.fps || rotation != videoEncoder!!.rotation) {
-            stopPreview()
-            isOnPreview = true
+            //stopPreview()
+            //isOnPreview = true
         }
         val formatVideoEncoder = FormatVideoEncoder.YUV420Dynamical
         return videoEncoder!!.prepareVideoEncoder(
@@ -126,29 +125,6 @@ abstract class EpsonBase(
         videoEncoder!!.setForce(forceVideo)
     }
 
-    /**
-     * Start camera preview. Ignored, if stream or preview is started.
-     *
-     * @param cameraFacing front or back camera. Like: [com.pedro.encoder.input.video.CameraHelper.Facing.BACK]
-     * [com.pedro.encoder.input.video.CameraHelper.Facing.FRONT]
-     * @param width of preview in px.
-     * @param height of preview in px.
-     * @param rotation camera rotation (0, 90, 180, 270). Recommended: [ ][com.pedro.encoder.input.video.CameraHelper.getCameraOrientation]
-     */
-    fun startPreview(cameraFacing: Facing?, width: Int, height: Int, fps: Int, rotation: Int) {
-        if (!isStreaming && !isOnPreview) {
-            previewWidth = width
-            previewHeight = height
-            videoEncoder!!.fps = fps
-            videoEncoder!!.rotation = rotation
-
-            cameraManager.setRotation(rotation)
-            cameraManager.start( width, height, videoEncoder!!.fps)
-            isOnPreview = true
-        } else {
-            Log.e(EpsonBase.Companion.TAG, "Streaming or preview started, ignored")
-        }
-    }
 
     /**
      * Start camera preview. Ignored, if stream or preview is started.
@@ -230,22 +206,19 @@ abstract class EpsonBase(
     fun startStream(url: String) {
         isStreaming = true
         // System.out.println("recordController "+ recordController.isRecording());
-        if (!isOnPreview) {
+        Log.d(TAG,"isOnPreview "+isOnPreview)
+
             startEncoders()
-        } else {
+
             requestKeyFrame()
-        }
+
         startStreamRtp(url)
-        isOnPreview = true
     }
 
     private fun startEncoders() {
         videoEncoder!!.start()
-        //prepareGlView()
         cameraManager.setRotation(videoEncoder!!.rotation)
-        if (!cameraManager.isRunning && videoEncoder!!.width != previewWidth
-            || videoEncoder!!.height != previewHeight
-        ) {
+        if (!cameraManager.isRunning) {
             cameraManager.start(videoEncoder!!.width, videoEncoder!!.height, videoEncoder!!.fps)
         }
         isOnPreview = true
@@ -361,7 +334,7 @@ abstract class EpsonBase(
     }
 
     protected abstract fun onSpsPpsVpsRtp(sps: ByteBuffer, pps: ByteBuffer, vps: ByteBuffer?)
-    override fun onSpsPpsVps(sps: ByteBuffer, pps: ByteBuffer, vps: ByteBuffer) {
+    override fun onSpsPpsVps(sps: ByteBuffer, pps: ByteBuffer, vps: ByteBuffer?) {
         onSpsPpsVpsRtp(sps.duplicate(), pps.duplicate(), if (vps != null) vps.duplicate() else null)
     }
 

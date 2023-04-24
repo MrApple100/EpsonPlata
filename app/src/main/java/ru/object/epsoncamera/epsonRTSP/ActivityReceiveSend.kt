@@ -18,7 +18,7 @@ import com.pedro.sample.databinding.FragmentReceiveBinding
 import com.pedro.sample.databinding.FragmentSendBinding
 import java.util.*
 
-class ActivityReceiveSend : AppCompatActivity(), PermissionGrantResultCallback {
+class ActivityReceiveSend : AppCompatActivity(){
 
     private val TAG = this.javaClass.simpleName
 
@@ -34,15 +34,13 @@ class ActivityReceiveSend : AppCompatActivity(), PermissionGrantResultCallback {
         val navView = findViewById<BottomNavigationView>(R.id.nav_view)
 
         val orientation = resources.configuration.orientation
-        val bindingSend:FragmentSendBinding = DataBindingUtil.setContentView(instance,R.layout.fragment_send)
-        val bindingReceive: FragmentReceiveBinding = DataBindingUtil.setContentView(instance,R.layout.fragment_receive)
 
 
         if (orientation == Configuration.ORIENTATION_LANDSCAPE) {
             // In landscape
 
         } else {
-            val navController = findNavController(R.id.nav_host_fragment)
+            val navController = findNavController(R.id.nav_epson_host_fragment)
             navView.setupWithNavController(navController)
         }
 
@@ -52,7 +50,7 @@ class ActivityReceiveSend : AppCompatActivity(), PermissionGrantResultCallback {
 
     }
 
-    override fun onStart() {
+    public override fun onStart() {
         super.onStart()
 
 
@@ -72,13 +70,6 @@ class ActivityReceiveSend : AppCompatActivity(), PermissionGrantResultCallback {
 
     }
 
-    override fun onPermissionGrantResult(permission: String, grantResult: Int) {
-        Snackbar.make(
-            window.decorView,
-            permission + " is " + if (PermissionHelper.PERMISSION_GRANTED == grantResult) "GRANTED" else "DENIED",
-            Snackbar.LENGTH_SHORT
-        ).show()
-    }
 
     companion object {
         private lateinit var instance: ActivityReceiveSend
