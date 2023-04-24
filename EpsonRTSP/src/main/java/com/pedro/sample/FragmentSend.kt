@@ -1,4 +1,3 @@
-package com.pedro.sample
 
 import android.os.Build
 import android.os.Bundle
@@ -8,6 +7,7 @@ import androidx.fragment.app.Fragment
 import com.pedro.encoder.input.video.CameraOpenException
 import com.pedro.rtsp.utils.ConnectCheckerRtsp
 import com.pedro.rtspserver.RtspServerCamera1
+import com.pedro.sample.R
 import com.pedro.sample.databinding.FragmentSendBinding
 import java.io.File
 import java.io.IOException

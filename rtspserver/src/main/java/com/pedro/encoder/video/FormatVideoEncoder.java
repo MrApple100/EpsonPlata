@@ -56,8 +56,6 @@ public enum FormatVideoEncoder {
         return MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV444Flexible;
       case YUV444INTERLEAVED:
         return MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV444Interleaved;
-      case H264:
-        return MediaCodecInfo.CodecCapabilities.YUV
       case SURFACE:
         return MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface;
       default:

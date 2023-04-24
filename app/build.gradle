@@ -80,36 +80,36 @@ dependencies {
     implementation 'androidx.constraintlayout:constraintlayout-solver:2.0.4'
 
 
-    // Paging
-    final pagingVersion = "1.0.1"
-    implementation "android.arch.paging:runtime:$pagingVersion"
-    implementation "android.arch.paging:rxjava2:$pagingVersion"
+//    // Paging
+//    final pagingVersion = "1.0.1"
+//    implementation "android.arch.paging:runtime:$pagingVersion"
+//    implementation "android.arch.paging:rxjava2:$pagingVersion"
 
-    // Barcode Scanner
-    implementation 'com.budiyev.android:code-scanner:2.1.0'
+//    // Barcode Scanner
+//    implementation 'com.budiyev.android:code-scanner:2.1.0'
 
     // Barcode Image Generator
     //noinspection GradleDependency
     implementation 'com.journeyapps:zxing-android-embedded:3.4.0'
 
-    // VCard Parser
-    implementation 'com.googlecode.ez-vcard:ez-vcard:0.11.0'
+//    // VCard Parser
+//    implementation 'com.googlecode.ez-vcard:ez-vcard:0.11.0'
 
     // Base32 Encoder
     implementation "commons-codec:commons-codec:1.15"
 
-    // OTP
-    implementation "dev.turingcomplete:kotlin-onetimepassword:2.0.1"
+//    // OTP
+//    implementation "dev.turingcomplete:kotlin-onetimepassword:2.0.1"
 
     // Rx
     implementation "io.reactivex.rxjava2:rxkotlin:2.3.0"
     implementation "com.jakewharton.rxbinding2:rxbinding-appcompat-v7-kotlin:2.2.0"
 
-    // Image Crop Library
-    implementation 'com.isseiaoki:simplecropview:1.1.8'
-
-    // Date time picker
-    implementation 'com.github.florent37:singledateandtimepicker:2.2.6'
+//    // Image Crop Library
+//    implementation 'com.isseiaoki:simplecropview:1.1.8'
+////
+//    // Date time picker
+//    implementation 'com.github.florent37:singledateandtimepicker:2.2.6'
 
 
     //Navigation

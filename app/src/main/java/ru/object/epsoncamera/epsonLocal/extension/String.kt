@@ -1,7 +1,6 @@
 package ru.`object`.epsoncamera.epsonLocal.extension
 
 import android.provider.ContactsContract
-import dev.turingcomplete.kotlinonetimepassword.HmacAlgorithm
 import org.apache.commons.codec.binary.Base32
 import java.util.*
 
@@ -10,15 +9,6 @@ private val escapedRegex = """\\([\\;,":])""".toRegex()
 fun String.unescape(): String {
     return replace(escapedRegex) { escaped ->
         escaped.groupValues[1]
-    }
-}
-
-fun String?.toHmacAlgorithm(): HmacAlgorithm {
-    return when (this) {
-        "SHA1" -> HmacAlgorithm.SHA1
-        "SHA256" -> HmacAlgorithm.SHA256
-        "SHA512" -> HmacAlgorithm.SHA512
-        else -> HmacAlgorithm.SHA1
     }
 }
 
