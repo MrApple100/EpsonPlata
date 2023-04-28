@@ -1,16 +1,7 @@
-package ru.`object`.epsoncamera.epsonLocal.utils
+package com.pedro.encoder.utils.yuv
 
-import android.content.Context
-import android.graphics.Bitmap
-import android.graphics.ImageFormat
-import android.graphics.Rect
-import android.icu.lang.UCharacter.GraphemeClusterBreak.V
-import android.renderscript.*
+import android.renderscript.Allocation
 import android.util.Log
-import androidx.camera.core.ImageProxy
-import com.epson.moverio.library.usb.u
-import com.epson.moverio.library.usb.v
-import com.epson.moverio.library.usb.y
 import com.pedro.DecodeUtil
 import java.nio.ByteBuffer
 import kotlin.experimental.and
@@ -32,19 +23,19 @@ class YuvToRgbConverter() {
         var uIndex = ySize // U statt index
         var vIndex = ySize * 5 / 4 // V start index: w*h*5/4
 
-        for (i in 0 until width * height*4 step 4) {
+        for (i in 0 until width * height * 4 step 4) {
             var r = argb[i].toInt()
             val stR = DecodeUtil.byteArrayToHexString(byteArrayOf(argb[i].toByte()))
             var g = argb[i + 1].toInt()
             var b = argb[i + 2].toInt()
-            if(r<0){
-                r+=256;
+            if (r < 0) {
+                r += 256;
             }
-            if(g<0){
-                g+=256;
+            if (g < 0) {
+                g += 256;
             }
-            if(b<0){
-                b+=256;
+            if (b < 0) {
+                b += 256;
             }
 
             // Convert RGB to YUV
@@ -62,7 +53,7 @@ class YuvToRgbConverter() {
 //            }
 // I420(YUV420p) -> YYYYYYYY UU VV
             yuv[yIndex++] = (if (Y < 0) 0 else if (Y > 255) 255 else Y).toByte()
-            if ((((i/4)/width) % 2 == 0) && (((i/4)%width) % 2 == 0)) {
+            if ((((i / 4) / width) % 2 == 0) && (((i / 4) % width) % 2 == 0)) {
                 yuv[uIndex++] = (if (U < 0) 0 else if (U > 255) 255 else U).toByte()
                 yuv[vIndex++] = (if (V < 0) 0 else if (V > 255) 255 else V).toByte()
             }
@@ -171,131 +162,132 @@ class YuvToRgbConverter() {
         return yuv420pData
     }
 
-    private fun imageToByteBuffer(image: ImageProxy, outputBuffer: ByteArray) {
-        /*if (BuildConfig.DEBUG && image.format != ImageFormat.YUV_420_888) {
-            error("Assertion failed")
-        }*/
-
-        val imageCrop = image.cropRect
-        val imagePlanes = image.planes
-
-        imagePlanes.forEachIndexed { planeIndex, plane ->
-            // How many values are read in input for each output value written
-            // Only the Y plane has a value for every pixel, U and V have half the resolution i.e.
-            //
-            // Y Plane            U Plane    V Plane
-            // ===============    =======    =======
-            // Y Y Y Y Y Y Y Y    U U U U    V V V V
-            // Y Y Y Y Y Y Y Y    U U U U    V V V V
-            // Y Y Y Y Y Y Y Y    U U U U    V V V V
-            // Y Y Y Y Y Y Y Y    U U U U    V V V V
-            // Y Y Y Y Y Y Y Y
-            // Y Y Y Y Y Y Y Y
-            // Y Y Y Y Y Y Y Y
-            val outputStride: Int
-
-            // The index in the output buffer the next value will be written at
-            // For Y it's zero, for U and V we start at the end of Y and interleave them i.e.
-            //
-            // First chunk        Second chunk
-            // ===============    ===============
-            // Y Y Y Y Y Y Y Y    V U V U V U V U
-            // Y Y Y Y Y Y Y Y    V U V U V U V U
-            // Y Y Y Y Y Y Y Y    V U V U V U V U
-            // Y Y Y Y Y Y Y Y    V U V U V U V U
-            // Y Y Y Y Y Y Y Y
-            // Y Y Y Y Y Y Y Y
-            // Y Y Y Y Y Y Y Y
-            var outputOffset: Int
-
-            when (planeIndex) {
-                0 -> {
-                    outputStride = 1
-                    outputOffset = 0
-                }
-                1 -> {
-                    outputStride = 2
-                    // For NV21 format, U is in odd-numbered indices
-                    outputOffset = pixelCount + 1
-                }
-                2 -> {
-                    outputStride = 2
-                    // For NV21 format, V is in even-numbered indices
-                    outputOffset = pixelCount
-                }
-                else -> {
-                    // Image contains more than 3 planes, something strange is going on
-                    return@forEachIndexed
-                }
-            }
-
-            val planeBuffer = plane.buffer
-            val rowStride = plane.rowStride
-            val pixelStride = plane.pixelStride
-
-            // We have to divide the width and height by two if it's not the Y plane
-            val planeCrop = if (planeIndex == 0) {
-                imageCrop
-            } else {
-                Rect(
-                    imageCrop.left / 2,
-                    imageCrop.top / 2,
-                    imageCrop.right / 2,
-                    imageCrop.bottom / 2
-                )
-            }
-
-            val planeWidth = planeCrop.width()
-            val planeHeight = planeCrop.height()
-
-            // Intermediate buffer used to store the bytes of each row
-            val rowBuffer = ByteArray(plane.rowStride)
-
-            // Size of each row in bytes
-            val rowLength = if (pixelStride == 1 && outputStride == 1) {
-                planeWidth
-            } else {
-                // Take into account that the stride may include data from pixels other than this
-                // particular plane and row, and that could be between pixels and not after every
-                // pixel:
-                //
-                // |---- Pixel stride ----|                    Row ends here --> |
-                // | Pixel 1 | Other Data | Pixel 2 | Other Data | ... | Pixel N |
-                //
-                // We need to get (N-1) * (pixel stride bytes) per row + 1 byte for the last pixel
-                (planeWidth - 1) * pixelStride + 1
-            }
-
-            for (row in 0 until planeHeight) {
-                // Move buffer position to the beginning of this row
-                planeBuffer.position(
-                    (row + planeCrop.top) * rowStride + planeCrop.left * pixelStride
-                )
-
-                if (pixelStride == 1 && outputStride == 1) {
-                    // When there is a single stride value for pixel and output, we can just copy
-                    // the entire row in a single step
-                    planeBuffer.get(outputBuffer, outputOffset, rowLength)
-                    outputOffset += rowLength
-                } else {
-                    // When either pixel or output have a stride > 1 we must copy pixel by pixel
-                    planeBuffer.get(rowBuffer, 0, rowLength)
-                    for (col in 0 until planeWidth) {
-                        outputBuffer[outputOffset] = rowBuffer[col * pixelStride]
-                        outputOffset += outputStride
-                    }
-                }
-            }
-        }
-    }
-
-    //    fun convertARGB8888ToYUV420(input: ByteArray, width: Int, height: Int): ByteArray {
-//        val ySize = width * height
-//        val uvSize = ySize / 4
-//        val yBuffer = ByteArray(ySize)
-//        val uBuffer = ByteArray(uvSize)
-//        val vBuffer = ByteArray(uvSize)
-//        var yIndex = 0
+    //
+//    private fun imageToByteBuffer(image: ImageProxy, outputBuffer: ByteArray) {
+//        /*if (BuildConfig.DEBUG && image.format != ImageFormat.YUV_420_888) {
+//            error("Assertion failed")
+//        }*/
+//
+//        val imageCrop = image.cropRect
+//        val imagePlanes = image.planes
+//
+//        imagePlanes.forEachIndexed { planeIndex, plane ->
+//            // How many values are read in input for each output value written
+//            // Only the Y plane has a value for every pixel, U and V have half the resolution i.e.
+//            //
+//            // Y Plane            U Plane    V Plane
+//            // ===============    =======    =======
+//            // Y Y Y Y Y Y Y Y    U U U U    V V V V
+//            // Y Y Y Y Y Y Y Y    U U U U    V V V V
+//            // Y Y Y Y Y Y Y Y    U U U U    V V V V
+//            // Y Y Y Y Y Y Y Y    U U U U    V V V V
+//            // Y Y Y Y Y Y Y Y
+//            // Y Y Y Y Y Y Y Y
+//            // Y Y Y Y Y Y Y Y
+//            val outputStride: Int
+//
+//            // The index in the output buffer the next value will be written at
+//            // For Y it's zero, for U and V we start at the end of Y and interleave them i.e.
+//            //
+//            // First chunk        Second chunk
+//            // ===============    ===============
+//            // Y Y Y Y Y Y Y Y    V U V U V U V U
+//            // Y Y Y Y Y Y Y Y    V U V U V U V U
+//            // Y Y Y Y Y Y Y Y    V U V U V U V U
+//            // Y Y Y Y Y Y Y Y    V U V U V U V U
+//            // Y Y Y Y Y Y Y Y
+//            // Y Y Y Y Y Y Y Y
+//            // Y Y Y Y Y Y Y Y
+//            var outputOffset: Int
+//
+//            when (planeIndex) {
+//                0 -> {
+//                    outputStride = 1
+//                    outputOffset = 0
+//                }
+//                1 -> {
+//                    outputStride = 2
+//                    // For NV21 format, U is in odd-numbered indices
+//                    outputOffset = pixelCount + 1
+//                }
+//                2 -> {
+//                    outputStride = 2
+//                    // For NV21 format, V is in even-numbered indices
+//                    outputOffset = pixelCount
+//                }
+//                else -> {
+//                    // Image contains more than 3 planes, something strange is going on
+//                    return@forEachIndexed
+//                }
+//            }
+//
+//            val planeBuffer = plane.buffer
+//            val rowStride = plane.rowStride
+//            val pixelStride = plane.pixelStride
+//
+//            // We have to divide the width and height by two if it's not the Y plane
+//            val planeCrop = if (planeIndex == 0) {
+//                imageCrop
+//            } else {
+//                Rect(
+//                    imageCrop.left / 2,
+//                    imageCrop.top / 2,
+//                    imageCrop.right / 2,
+//                    imageCrop.bottom / 2
+//                )
+//            }
+//
+//            val planeWidth = planeCrop.width()
+//            val planeHeight = planeCrop.height()
+//
+//            // Intermediate buffer used to store the bytes of each row
+//            val rowBuffer = ByteArray(plane.rowStride)
+//
+//            // Size of each row in bytes
+//            val rowLength = if (pixelStride == 1 && outputStride == 1) {
+//                planeWidth
+//            } else {
+//                // Take into account that the stride may include data from pixels other than this
+//                // particular plane and row, and that could be between pixels and not after every
+//                // pixel:
+//                //
+//                // |---- Pixel stride ----|                    Row ends here --> |
+//                // | Pixel 1 | Other Data | Pixel 2 | Other Data | ... | Pixel N |
+//                //
+//                // We need to get (N-1) * (pixel stride bytes) per row + 1 byte for the last pixel
+//                (planeWidth - 1) * pixelStride + 1
+//            }
+//
+//            for (row in 0 until planeHeight) {
+//                // Move buffer position to the beginning of this row
+//                planeBuffer.position(
+//                    (row + planeCrop.top) * rowStride + planeCrop.left * pixelStride
+//                )
+//
+//                if (pixelStride == 1 && outputStride == 1) {
+//                    // When there is a single stride value for pixel and output, we can just copy
+//                    // the entire row in a single step
+//                    planeBuffer.get(outputBuffer, outputOffset, rowLength)
+//                    outputOffset += rowLength
+//                } else {
+//                    // When either pixel or output have a stride > 1 we must copy pixel by pixel
+//                    planeBuffer.get(rowBuffer, 0, rowLength)
+//                    for (col in 0 until planeWidth) {
+//                        outputBuffer[outputOffset] = rowBuffer[col * pixelStride]
+//                        outputOffset += outputStride
+//                    }
+//                }
+//            }
+//        }
+//    }
+//
+//    //    fun convertARGB8888ToYUV420(input: ByteArray, width: Int, height: Int): ByteArray {
+////        val ySize = width * height
+////        val uvSize = ySize / 4
+////        val yBuffer = ByteArray(ySize)
+////        val uBuffer = ByteArray(uvSize)
+////        val vBuffer = ByteArray(uvSize)
+////        var yIndex = 0
 //        var uIndex = 0
 //        var vIndex = 0
 //

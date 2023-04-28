@@ -13,9 +13,7 @@ import com.epson.moverio.util.PermissionGrantResultCallback
 import com.epson.moverio.util.PermissionHelper
 import com.pedro.encoder.input.video.CameraCallbacks
 import com.pedro.encoder.input.video.GetCameraData
-import io.github.crow_misia.libyuv.ArgbBuffer
 import ru.`object`.epsoncamera.domain.CalcurationRate
-import ru.`object`.epsoncamera.epsonLocal.utils.YuvToRgbConverter
 import java.io.IOException
 import java.nio.ByteBuffer
 
@@ -53,7 +51,7 @@ class EpsonApiManager : CaptureStateCallback2, CaptureDataCallback, CaptureDataC
         private set
     private var fps = 30
     private var rotation = 0
-    private val imageFormat = ImageFormat.YUV_420_888//n21   ///yuy2=20
+    private val imageFormat = ImageFormat.FLEX_RGBA_8888//n21   ///yuy2=20
     private lateinit var yuvBuffer: ByteArray
     private val cameraProperty: String
         private get() {
@@ -133,7 +131,7 @@ class EpsonApiManager : CaptureStateCallback2, CaptureDataCallback, CaptureDataC
         } catch (e: IOException) {
             e.printStackTrace()
         }
-        isRunning=true
+        isRunning = true
 
     }
 //
@@ -149,10 +147,10 @@ class EpsonApiManager : CaptureStateCallback2, CaptureDataCallback, CaptureDataC
 
     fun stop() {
         //StopPreview
-        if(mCameraDevice!=null) {
+        if (mCameraDevice != null) {
             mCameraDevice!!.stopPreview()
             mCameraDevice!!.stopCapture()
-            mCameraDevice=null
+            mCameraDevice = null
         }
         isRunning = false
     }
@@ -186,32 +184,12 @@ class EpsonApiManager : CaptureStateCallback2, CaptureDataCallback, CaptureDataC
         this.cameraCallbacks = cameraCallbacks
     }
 
-
     override fun onCaptureData(timestamp: Long, datamass: ByteArray) {
-        if(mCameraDevice!=null) {
+        if (mCameraDevice != null) {
             mCalcurationRate_framerate!!.updata()
-            try {
 
-                mCameraDevice!!.property.captureSize[0]
-                mCameraDevice!!.property.captureSize[1]
-
-
-            } catch (e: Exception) {
-                Log.d("ERRORGLOBAL", e.localizedMessage)
-            }
-
-            //не yuv a rgb, вроде как сейчас yuv422
-            //argb8888
-//            val data = ByteBuffer.wrap(datamass)
-//            data.rewind()
-           Log.d(TAG," "+mCameraDevice!!.property.captureSize[0]+" "+ mCameraDevice!!.property.captureSize[1]+" "+datamass.size)
-            val yuv420 = YuvToRgbConverter(context).convertARGB8888ToYUV420P(
-                datamass,
-                mCameraDevice!!.property.captureSize[0],
-                mCameraDevice!!.property.captureSize[1]
-            )
             getCameraData.inputYUVData(
-                com.pedro.encoder.Frame(yuv420, 0, false, imageFormat)
+                com.pedro.encoder.Frame(datamass, 0, false, imageFormat)
             )
         }
     }
@@ -236,9 +214,9 @@ class EpsonApiManager : CaptureStateCallback2, CaptureDataCallback, CaptureDataC
         mCameraDevice!!.startCapture()
 
 
-       // Log.d(TAG, "onCameraOpened")
+        // Log.d(TAG, "onCameraOpened")
         //mTextView_captureState!!.text = "onCameraOpened"
-     //   Toast.makeText(context, "onCameraOpened", Toast.LENGTH_SHORT).show()
+        //   Toast.makeText(context, "onCameraOpened", Toast.LENGTH_SHORT).show()
         //  mTextView_test!!.text = cameraProperty
     }
 
@@ -251,7 +229,7 @@ class EpsonApiManager : CaptureStateCallback2, CaptureDataCallback, CaptureDataC
 
         property = mCameraDevice!!.property
         property.brightness = 0
-       // property.captureDataFormat = CameraProperty.CAPTURE_DATA_FORMAT_H264
+        // property.captureDataFormat = CameraProperty.CAPTURE_DATA_FORMAT_H264
         property.captureDataFormat = CameraProperty.CAPTURE_DATA_FORMAT_ARGB_8888
 
         val ret = mCameraDevice!!.setProperty(property)
@@ -264,16 +242,16 @@ class EpsonApiManager : CaptureStateCallback2, CaptureDataCallback, CaptureDataC
     }
 
     override fun onCameraClosed() {
-     //   Log.d(TAG, "onCameraClosed")
+        //   Log.d(TAG, "onCameraClosed")
         // mTextView_captureState!!.text = "onCameraClosed"
-     //   Toast.makeText(context, "onCameraClosed", Toast.LENGTH_SHORT).show()
+        //   Toast.makeText(context, "onCameraClosed", Toast.LENGTH_SHORT).show()
         //  mTextView_test!!.text = cameraProperty
 
 
         //StopCapture
-        if(mCameraDevice!=null) {
+        if (mCameraDevice != null) {
             mCameraDevice!!.stopCapture()
-            mCameraDevice=null
+            mCameraDevice = null
         }
 
 
@@ -283,16 +261,16 @@ class EpsonApiManager : CaptureStateCallback2, CaptureDataCallback, CaptureDataC
         //StartPreview
         mCameraDevice!!.startPreview()
 
-      //  Log.d(TAG, "onCaptureStarted")
+        //  Log.d(TAG, "onCaptureStarted")
         //   mTextView_captureState!!.text = "onCaptureStarted"
-      //  Toast.makeText(context, "onCameraStarted", Toast.LENGTH_SHORT).show()
+        //  Toast.makeText(context, "onCameraStarted", Toast.LENGTH_SHORT).show()
         //  mTextView_test!!.text = cameraProperty
     }
 
     override fun onCaptureStopped() {
-      //  Log.d(TAG, "onCaptureStopped")
+        //  Log.d(TAG, "onCaptureStopped")
         //  mTextView_captureState!!.text = "onCaptureStopped"
-      //  Toast.makeText(context, "onCameraStopped", Toast.LENGTH_SHORT).show();
+        //  Toast.makeText(context, "onCameraStopped", Toast.LENGTH_SHORT).show();
         //  mTextView_test!!.text = cameraProperty
 
         //close
@@ -310,26 +288,26 @@ class EpsonApiManager : CaptureStateCallback2, CaptureDataCallback, CaptureDataC
     override fun onPreviewStopped() {
         Log.d(TAG, "onPreviewStopped")
         // mTextView_captureState!!.text = "onPreviewStopped"
-        Toast.makeText(context,"onPreviewStopped",Toast.LENGTH_SHORT).show();
+        Toast.makeText(context, "onPreviewStopped", Toast.LENGTH_SHORT).show();
         // mTextView_test!!.text = cameraProperty
     }
 
     override fun onRecordStarted() {
-      //  Log.d(TAG, "onRecordStarted")
+        //  Log.d(TAG, "onRecordStarted")
         //  mTextView_captureState!!.text = "onRecordStarted"
-       // Toast.makeText(context, "onRecordStarted", Toast.LENGTH_SHORT).show()
+        // Toast.makeText(context, "onRecordStarted", Toast.LENGTH_SHORT).show()
         //  mTextView_test!!.text = cameraProperty
     }
 
     override fun onRecordStopped() {
         //Log.d(TAG, "onRecordStopped")
         // mTextView_captureState!!.text = "onRecordStopped"
-       // Toast.makeText(context, "onRecordStopped", Toast.LENGTH_SHORT).show()
+        // Toast.makeText(context, "onRecordStopped", Toast.LENGTH_SHORT).show()
         // mTextView_test!!.text = cameraProperty
     }
 
     override fun onPictureCompleted() {
-      //  Log.d(TAG, "onPictureCompleted")
+        //  Log.d(TAG, "onPictureCompleted")
         // mTextView_captureState!!.text = "onPictureCompleted"
         // mTextView_test!!.text = cameraProperty
     }
@@ -337,10 +315,10 @@ class EpsonApiManager : CaptureStateCallback2, CaptureDataCallback, CaptureDataC
     override fun onHeadsetAttached() {
         //open
         try {
-            if(mCameraDevice!=null) {
+            if (mCameraDevice != null) {
                 mCameraDevice!!.stopPreview()
                 mCameraDevice!!.stopCapture()
-                mCameraDevice=null
+                mCameraDevice = null
             }
 //            mCameraDevice!!.stopCapture()
 //            mCameraDevice=null;
@@ -357,10 +335,10 @@ class EpsonApiManager : CaptureStateCallback2, CaptureDataCallback, CaptureDataC
 
     override fun onHeadsetDetached() {
         //StopPreview
-        if(mCameraDevice!=null) {
+        if (mCameraDevice != null) {
             mCameraDevice!!.stopPreview()
             mCameraDevice!!.stopCapture()
-            mCameraDevice=null
+            mCameraDevice = null
         }
         isRunning = false
         Toast.makeText(context, "Headset detached...", Toast.LENGTH_SHORT).show()
@@ -376,9 +354,10 @@ class EpsonApiManager : CaptureStateCallback2, CaptureDataCallback, CaptureDataC
     }
 
     override fun onPermissionGrantResult(permission: String, grantResult: Int) {
-        Toast.makeText(context,
+        Toast.makeText(
+            context,
             permission + " is " + if (PermissionHelper.PERMISSION_GRANTED == grantResult) "GRANTED" else "DENIED",
-           Toast.LENGTH_SHORT
+            Toast.LENGTH_SHORT
         ).show()
     }
 

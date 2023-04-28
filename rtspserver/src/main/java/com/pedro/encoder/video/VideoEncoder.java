@@ -35,6 +35,7 @@ import com.pedro.encoder.input.video.FpsLimiter;
 import com.pedro.encoder.input.video.GetCameraData;
 import com.pedro.encoder.utils.CodecUtil;
 import com.pedro.encoder.utils.yuv.YUVUtil;
+import com.pedro.encoder.utils.yuv.YuvToRgbConverter;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -58,14 +59,14 @@ public class VideoEncoder extends BaseEncoder implements GetCameraData {
 
   private int width = 1920;
   private int height = 1080;
-  private int fps = 20;
+  private int fps = 30;
   private int bitRate = 8000 * 1024; //in kbps
   private int rotation = 0;
   private int iFrameInterval = 0;
   //for disable video
   private final FpsLimiter fpsLimiter = new FpsLimiter();
   private String type = CodecUtil.H264_MIME;
-  private FormatVideoEncoder formatVideoEncoder = FormatVideoEncoder.YUV420PLANAR;//YUV420
+  private FormatVideoEncoder formatVideoEncoder = FormatVideoEncoder.ARGB8888;//YUV420
   private int avcProfile = -1;
   private int avcProfileLevel = -1;
 
@@ -181,7 +182,7 @@ public class VideoEncoder extends BaseEncoder implements GetCameraData {
     if (resetTs) {
       fpsLimiter.setFPS(fps);
     }
-    if (formatVideoEncoder != FormatVideoEncoder.SURFACE) {
+    if (formatVideoEncoder != FormatVideoEncoder.SURFACE && formatVideoEncoder != FormatVideoEncoder.ARGB8888) {
       YUVUtil.preAllocateBuffers(width * height * 3 / 2);
     }
     Log.i(TAG, "started");
@@ -443,22 +444,73 @@ public class VideoEncoder extends BaseEncoder implements GetCameraData {
     return byteBufferList;
   }
 
+  int i1,i2=0;
   @Override
   protected Frame getInputFrame() throws InterruptedException {
     Frame frame = queue.take();
+    while(i1<5) {
+      Log.d("Poluchil", " " + System.currentTimeMillis());
+      i1++;
+    }
     if (frame == null) return null;
     if (fpsLimiter.limitFPS()) return getInputFrame();
-//    byte[] buffer = frame.getBuffer();
-//    boolean isYV12 = frame.getFormat() == ImageFormat.YV12;
-//
-//    int orientation = frame.isFlip() ? frame.getOrientation() + 180 : frame.getOrientation();
-//    if (orientation >= 360) orientation -= 360;
-//    buffer = isYV12 ? YUVUtil.rotateYV12(buffer, width, height, orientation)
-//        : YUVUtil.rotateNV21(buffer, width, height, orientation);
-//
-//    buffer = isYV12 ? YUVUtil.YV12toYUV420byColor(buffer, width, height, formatVideoEncoder)
-//        : YUVUtil.NV21toYUV420byColor(buffer, width, height, formatVideoEncoder);
-//    frame.setBuffer(buffer);
+
+    boolean isYV12 = frame.getFormat() == ImageFormat.YV12;
+    boolean isFlexRGBA8888 = frame.getFormat() == ImageFormat.FLEX_RGBA_8888;
+    boolean isYUY2 = frame.getFormat() == ImageFormat.YUY2;
+
+    int orientation = frame.isFlip() ? frame.getOrientation() + 180 : frame.getOrientation();
+    if (orientation >= 360) orientation -= 360;
+    if(isYV12){
+      byte[] buffer = frame.getBuffer();
+      buffer = /*isYV12 ? */YUVUtil.rotateYV12(buffer, width, height, orientation);
+             // : YUVUtil.rotateNV21(buffer, width, height, orientation);
+      buffer = /*isYV12 ?*/ YUVUtil.YV12toYUV420byColor(buffer, width, height, formatVideoEncoder);
+            //  : YUVUtil.NV21toYUV420byColor(buffer, width, height, formatVideoEncoder);
+      frame.setBuffer(buffer);
+      frame.setSize(buffer.length);
+      while(i2<5) {
+        Log.d("Obrabotal", " " + System.currentTimeMillis());
+        i2++;
+      }
+      return frame;
+    }
+    if(isFlexRGBA8888){
+    //  byte[] buffer = frame.getBuffer();
+//       buffer = new YuvToRgbConverter().convertARGB8888ToYUV420P(
+//              buffer,
+//              width,
+//              height
+//            );
+//       frame.setFormat(ImageFormat.YUV_420_888);
+//      frame.setBuffer(buffer);
+//      frame.setSize(buffer.length);
+      while(i2<5) {
+        Log.d("Obrabotal", " " + System.currentTimeMillis());
+        i2++;
+      }
+      return frame;
+    }
+    if(isYUY2){
+      byte[] buffer = frame.getBuffer();
+      //System.out.println("VideoEncoder");
+    //  Log.d(TAG,"VideoEncoder 3");
+      buffer = new YuvToRgbConverter().convertYUY2ToYUV420(
+              buffer,
+              width,
+              height
+      );
+      frame.setFormat(ImageFormat.FLEX_RGBA_8888);
+    //  Log.d(TAG,"VideoEncoder 4 "+buffer.length);
+      frame.setBuffer(buffer);
+      frame.setSize(buffer.length);
+      while(i2<5) {
+        Log.d("Obrabotal", " " + System.currentTimeMillis());
+        i2++;
+      }
+      return frame;
+    }
+
     return frame;
   }
 

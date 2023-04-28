@@ -28,7 +28,7 @@ public enum FormatVideoEncoder {
   YUV422FLEXIBLE, YUV422PLANAR, YUV422SEMIPLANAR, YUV422PACKEDPLANAR, YUV422PACKEDSEMIPLANAR,
   YUV444FLEXIBLE, YUV444INTERLEAVED, SURFACE,
   //take first valid color for encoder (YUV420PLANAR, YUV420SEMIPLANAR or YUV420PACKEDPLANAR)
-  YUV420Dynamical;
+  YUV420Dynamical, ARGB8888;
 
   public int getFormatCodec() {
     switch (this) {
@@ -58,6 +58,8 @@ public enum FormatVideoEncoder {
         return MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV444Interleaved;
       case SURFACE:
         return MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface;
+      case ARGB8888:
+        return MediaCodecInfo.CodecCapabilities.COLOR_Format32bitABGR8888;
       default:
         return -1;
     }

@@ -65,7 +65,6 @@ class ObjectDetectorAnalyzer private constructor(
         resultWidth = config.inputSize
     )
 
-    private val yuvToRgbConverter = YuvToRgbConverter(context)
 
     private val uiHandler = Handler(Looper.getMainLooper())
 

@@ -86,7 +86,7 @@ abstract class EpsonBase(
             //stopPreview()
             //isOnPreview = true
         }
-        val formatVideoEncoder = FormatVideoEncoder.YUV420PLANAR
+        val formatVideoEncoder = FormatVideoEncoder.ARGB8888
         return videoEncoder!!.prepareVideoEncoder(
             width, height, fps, bitrate, rotation, iFrameInterval,
             formatVideoEncoder, avcProfile, avcProfileLevel
@@ -114,7 +114,7 @@ abstract class EpsonBase(
      */
     fun prepareVideo(): Boolean {
         val rotation = CameraHelper.getCameraOrientation(context)
-        return prepareVideo(1920, 1080, 30, 1024 * 8000, rotation)
+        return prepareVideo(1920, 1080, 20, 1024 * 8000, rotation)
     }
 
     /**
