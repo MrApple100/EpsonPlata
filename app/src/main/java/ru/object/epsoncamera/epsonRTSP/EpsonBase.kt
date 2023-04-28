@@ -86,7 +86,7 @@ abstract class EpsonBase(
             //stopPreview()
             //isOnPreview = true
         }
-        val formatVideoEncoder = FormatVideoEncoder.YUV420Dynamical
+        val formatVideoEncoder = FormatVideoEncoder.YUV420PLANAR
         return videoEncoder!!.prepareVideoEncoder(
             width, height, fps, bitrate, rotation, iFrameInterval,
             formatVideoEncoder, avcProfile, avcProfileLevel

@@ -65,7 +65,7 @@ public class VideoEncoder extends BaseEncoder implements GetCameraData {
   //for disable video
   private final FpsLimiter fpsLimiter = new FpsLimiter();
   private String type = CodecUtil.H264_MIME;
-  private FormatVideoEncoder formatVideoEncoder = FormatVideoEncoder.YUV422PLANAR;//YUV420
+  private FormatVideoEncoder formatVideoEncoder = FormatVideoEncoder.YUV420PLANAR;//YUV420
   private int avcProfile = -1;
   private int avcProfileLevel = -1;
 
@@ -448,17 +448,17 @@ public class VideoEncoder extends BaseEncoder implements GetCameraData {
     Frame frame = queue.take();
     if (frame == null) return null;
     if (fpsLimiter.limitFPS()) return getInputFrame();
-    byte[] buffer = frame.getBuffer();
-    boolean isYV12 = frame.getFormat() == ImageFormat.YV12;
-
-    int orientation = frame.isFlip() ? frame.getOrientation() + 180 : frame.getOrientation();
-    if (orientation >= 360) orientation -= 360;
-    buffer = isYV12 ? YUVUtil.rotateYV12(buffer, width, height, orientation)
-        : YUVUtil.rotateNV21(buffer, width, height, orientation);
-
-    buffer = isYV12 ? YUVUtil.YV12toYUV420byColor(buffer, width, height, formatVideoEncoder)
-        : YUVUtil.NV21toYUV420byColor(buffer, width, height, formatVideoEncoder);
-    frame.setBuffer(buffer);
+//    byte[] buffer = frame.getBuffer();
+//    boolean isYV12 = frame.getFormat() == ImageFormat.YV12;
+//
+//    int orientation = frame.isFlip() ? frame.getOrientation() + 180 : frame.getOrientation();
+//    if (orientation >= 360) orientation -= 360;
+//    buffer = isYV12 ? YUVUtil.rotateYV12(buffer, width, height, orientation)
+//        : YUVUtil.rotateNV21(buffer, width, height, orientation);
+//
+//    buffer = isYV12 ? YUVUtil.YV12toYUV420byColor(buffer, width, height, formatVideoEncoder)
+//        : YUVUtil.NV21toYUV420byColor(buffer, width, height, formatVideoEncoder);
+//    frame.setBuffer(buffer);
     return frame;
   }
 

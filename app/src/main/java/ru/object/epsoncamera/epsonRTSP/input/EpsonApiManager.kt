@@ -11,12 +11,10 @@ import com.epson.moverio.system.DeviceManager
 import com.epson.moverio.system.HeadsetStateCallback
 import com.epson.moverio.util.PermissionGrantResultCallback
 import com.epson.moverio.util.PermissionHelper
-import com.google.android.material.snackbar.Snackbar
 import com.pedro.encoder.input.video.CameraCallbacks
 import com.pedro.encoder.input.video.GetCameraData
-import com.pedro.encoder.utils.yuv.YUVUtil
+import io.github.crow_misia.libyuv.ArgbBuffer
 import ru.`object`.epsoncamera.domain.CalcurationRate
-import ru.`object`.epsoncamera.epsonLocal.MoverioCameraSampleFragment
 import ru.`object`.epsoncamera.epsonLocal.utils.YuvToRgbConverter
 import java.io.IOException
 import java.nio.ByteBuffer
@@ -204,16 +202,17 @@ class EpsonApiManager : CaptureStateCallback2, CaptureDataCallback, CaptureDataC
 
             //не yuv a rgb, вроде как сейчас yuv422
             //argb8888
-            Log.d(TAG," "+mCameraDevice!!.property.captureSize[0]+" "+ mCameraDevice!!.property.captureSize[1])
-            val yuv420 = YuvToRgbConverter(context).convertRGB565ToYUV420(
+//            val data = ByteBuffer.wrap(datamass)
+//            data.rewind()
+           Log.d(TAG," "+mCameraDevice!!.property.captureSize[0]+" "+ mCameraDevice!!.property.captureSize[1]+" "+datamass.size)
+            val yuv420 = YuvToRgbConverter(context).convertARGB8888ToYUV420P(
                 datamass,
                 mCameraDevice!!.property.captureSize[0],
                 mCameraDevice!!.property.captureSize[1]
             )
             getCameraData.inputYUVData(
-                com.pedro.encoder.Frame(yuv420, rotation, true, imageFormat)
+                com.pedro.encoder.Frame(yuv420, 0, false, imageFormat)
             )
-            //camera.addCallbackBuffer(yuvBuffer)
         }
     }
 
@@ -231,6 +230,8 @@ class EpsonApiManager : CaptureStateCallback2, CaptureDataCallback, CaptureDataC
         property.captureFps = item[2]
         mCameraDevice!!.property = property
 
+        initView(mCameraDevice!!.property)
+
         //StartCapture
         mCameraDevice!!.startCapture()
 
@@ -238,7 +239,6 @@ class EpsonApiManager : CaptureStateCallback2, CaptureDataCallback, CaptureDataC
        // Log.d(TAG, "onCameraOpened")
         //mTextView_captureState!!.text = "onCameraOpened"
      //   Toast.makeText(context, "onCameraOpened", Toast.LENGTH_SHORT).show()
-        initView(mCameraDevice!!.property)
         //  mTextView_test!!.text = cameraProperty
     }
 
@@ -252,7 +252,7 @@ class EpsonApiManager : CaptureStateCallback2, CaptureDataCallback, CaptureDataC
         property = mCameraDevice!!.property
         property.brightness = 0
        // property.captureDataFormat = CameraProperty.CAPTURE_DATA_FORMAT_H264
-        property.captureDataFormat = CameraProperty.CAPTURE_DATA_FORMAT_RGB_565
+        property.captureDataFormat = CameraProperty.CAPTURE_DATA_FORMAT_ARGB_8888
 
         val ret = mCameraDevice!!.setProperty(property)
         updateView()

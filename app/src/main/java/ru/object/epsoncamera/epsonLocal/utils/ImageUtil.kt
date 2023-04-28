@@ -3,8 +3,11 @@ package ru.`object`.epsoncamera.epsonLocal.utils
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Matrix
+import android.util.Log
 import androidx.camera.core.ImageProxy
+import ru.`object`.epsoncamera.epsonRTSP.input.EpsonApiManager
 import java.io.File
+import java.nio.ByteBuffer
 import kotlin.math.abs
 
 object ImageUtil {
@@ -25,6 +28,25 @@ object ImageUtil {
 
     fun storePixels(bitmap: Bitmap, array: IntArray) {
         bitmap.getPixels(array, 0, bitmap.width, 0, 0, bitmap.width, bitmap.height)
+    }
+    fun storePixelsByte(bitmap: Bitmap):ByteArray{
+        val width = bitmap.width
+        val height = bitmap.height
+        val pixels = IntArray(width * height)
+        bitmap.getPixels(pixels, 0, width, 0, 0, width, height)
+        Log.d("EpsonApiManager",""+pixels.size)
+        val buffer = ByteBuffer.allocate(pixels.size * 4)
+        var i=0
+        try {
+            (pixels).forEach { pixel ->
+                buffer.putInt(pixel)
+                i++
+            }
+        }catch(e:Exception){
+            Log.d("EpsonApiManager2", i.toString())
+
+        }
+        return buffer.array()
     }
 
     fun getTransformMatrix(

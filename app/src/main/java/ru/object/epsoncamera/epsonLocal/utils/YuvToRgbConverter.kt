@@ -4,8 +4,14 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.ImageFormat
 import android.graphics.Rect
+import android.icu.lang.UCharacter.GraphemeClusterBreak.V
 import android.renderscript.*
+import android.util.Log
 import androidx.camera.core.ImageProxy
+import com.epson.moverio.library.usb.u
+import com.epson.moverio.library.usb.v
+import com.epson.moverio.library.usb.y
+import com.pedro.DecodeUtil
 import java.nio.ByteBuffer
 import kotlin.experimental.and
 
@@ -17,6 +23,98 @@ class YuvToRgbConverter(context: Context) {
     private lateinit var yuvBuffer: ByteBuffer
     private lateinit var inputAllocation: Allocation
     private lateinit var outputAllocation: Allocation
+
+    fun convertARGB8888ToYUV420P(argb: ByteArray, width: Int, height: Int): ByteArray {
+        val ySize = width * height
+        val uvSize = ySize / 4
+
+        val yuv = ByteArray(ySize + uvSize * 2)
+
+        var yIndex = 0
+        var uIndex = ySize // U statt index
+        var vIndex = ySize * 5 / 4 // V start index: w*h*5/4
+
+        for (i in 0 until width * height*4 step 4) {
+            var r = argb[i].toInt()
+            val stR = DecodeUtil.byteArrayToHexString(byteArrayOf(argb[i].toByte()))
+            var g = argb[i + 1].toInt()
+            var b = argb[i + 2].toInt()
+            if(r<0){
+                r+=256;
+            }
+            if(g<0){
+                g+=256;
+            }
+            if(b<0){
+                b+=256;
+            }
+
+            // Convert RGB to YUV
+            val Y = ((66 * r + 129 * g + 25 * b + 128) shr 8) + 16
+            val U = ((-38 * r - 74 * g + 112 * b + 128) shr 8) + 128
+            val V = ((112 * r - 94 * g - 18 * b + 128) shr 8) + 128
+
+//            // Store Y values
+//            yuv[yIndex++] = y.toByte()
+//
+//            // Store U and V values every other pixel
+//            if (((i/4)/width) % 2 == 0 && ((i/4)%width) % 2 == 0) {
+//                yuv[uIndex++] = u.toByte()
+//                yuv[vIndex++] = v.toByte()
+//            }
+// I420(YUV420p) -> YYYYYYYY UU VV
+            yuv[yIndex++] = (if (Y < 0) 0 else if (Y > 255) 255 else Y).toByte()
+            if ((((i/4)/width) % 2 == 0) && (((i/4)%width) % 2 == 0)) {
+                yuv[uIndex++] = (if (U < 0) 0 else if (U > 255) 255 else U).toByte()
+                yuv[vIndex++] = (if (V < 0) 0 else if (V > 255) 255 else V).toByte()
+            }
+
+        }
+
+        return yuv
+    }
+
+
+    // argb 8888 to i420
+    fun conver_argb_to_i420(argb: ByteArray, width: Int, height: Int): ByteArray {
+
+        var i420: ByteArray = ByteArray(width * height * 3 / 2)
+        val frameSize = width * height
+        var yIndex = 0 // Y start index
+        var uIndex = frameSize // U statt index
+        var vIndex = frameSize * 5 / 4 // V start index: w*h*5/4
+        var a: Int
+        var R: Int
+        var G: Int
+        var B: Int
+        var Y: Int
+        var U: Int
+        var V: Int
+        var index = 0
+        for (j in 0 until height) {
+            for (i in 0 until width step 4) {
+                a = argb[index].toInt() //  is not used obviously
+                R = argb[index + 1].toInt()
+                G = argb[index + 2].toInt()
+                B = argb[index + 3].toInt()
+
+                // well known RGB to YUV algorithm
+                Y = (66 * R + 129 * G + 25 * B + 128 shr 8) + 16
+                U = (-38 * R - 74 * G + 112 * B + 128 shr 8) + 128
+                V = (112 * R - 94 * G - 18 * B + 128 shr 8) + 128
+
+                // I420(YUV420p) -> YYYYYYYY UU VV
+                i420[yIndex++] = (if (Y < 0) 0 else if (Y > 255) 255 else Y).toByte()
+                if (j % 2 == 0 && i % 2 == 0) {
+                    i420[uIndex++] = (if (U < 0) 0 else if (U > 255) 255 else U).toByte()
+                    i420[vIndex++] = (if (V < 0) 0 else if (V > 255) 255 else V).toByte()
+                }
+                index + 4
+            }
+        }
+        return i420
+    }
+
 
     @Synchronized
     fun yuvToRgb(image: ImageProxy, output: Bitmap) {
@@ -51,6 +149,28 @@ class YuvToRgbConverter(context: Context) {
         scriptYuvToRgb.setInput(inputAllocation)
         scriptYuvToRgb.forEach(outputAllocation)
         outputAllocation.copyTo(output)
+    }
+
+    fun convertYUY2ToYUV420P(yuy2Data: ByteArray, width: Int, height: Int): ByteArray? {
+        val ySize = width * height
+        val uvSize = ySize / 4
+        val yuv420pData = ByteArray(ySize + 2 * uvSize)
+        for (i in 0 until ySize) {
+            yuv420pData[i] = yuy2Data[i * 2]
+        }
+        var i = 0
+        var j = 0
+        while (i < uvSize) {
+            val u = yuy2Data[ySize + j]
+            val y1 = yuy2Data[ySize + j + 1]
+            val v = yuy2Data[ySize + j + 2]
+            val y2 = yuy2Data[ySize + j + 3]
+            yuv420pData[ySize + i] = ((u + v) / 2).toByte()
+            yuv420pData[ySize + uvSize + i] = ((y1 + y2) / 2).toByte()
+            i++
+            j += 4
+        }
+        return yuv420pData
     }
 
     private fun imageToByteBuffer(image: ImageProxy, outputBuffer: ByteArray) {
@@ -170,7 +290,8 @@ class YuvToRgbConverter(context: Context) {
             }
         }
     }
-//    fun convertARGB8888ToYUV420(input: ByteArray, width: Int, height: Int): ByteArray {
+
+    //    fun convertARGB8888ToYUV420(input: ByteArray, width: Int, height: Int): ByteArray {
 //        val ySize = width * height
 //        val uvSize = ySize / 4
 //        val yBuffer = ByteArray(ySize)
@@ -204,37 +325,39 @@ class YuvToRgbConverter(context: Context) {
 //
 //        return output
 //    }
-fun convertRGB565ToYUV420(rgb: ByteArray, width: Int, height: Int): ByteArray {
-    val yuv = ByteArray(width * height * 3 / 2)
-    var yIndex = 0
-    var uIndex = width * height
-    var vIndex = uIndex + (uIndex / 4)
-    var index = 0
-    for (row in 0 until height) {
-        for (col in 0 until width step 2) {
-            val pixel1 = rgb[index].toInt() and 0xff
-            val pixel2 = rgb[index + 1].toInt() and 0xff
-            val r1 = (pixel1 and 0xf8) shr 3
-            val g1 = (pixel1 and 0x07) shl 3 or ((pixel2 and 0xe0) shr 5)
-            val b1 = pixel2 and 0x1f
-            val r2 = (rgb[index + 2].toInt() and 0xf8) shr 3
-            val g2 = (rgb[index + 2].toInt() and 0x07) shl 3 or ((rgb[index + 3].toInt() and 0xe0) shr 5)
-            val b2 = rgb[index + 3].toInt() and 0x1f
-            val y1 = ((66 * r1 + 129 * g1 + 25 * b1 + 128) shr 8) + 16
-            val y2 = ((66 * r2 + 129 * g2 + 25 * b2 + 128) shr 8) + 16
-            val u = ((-38 * r1 - 74 * g1 + 112 * b1 + 128) shr 8) + 128
-            val v = ((112 * r1 - 94 * g1 - 18 * b1 + 128) shr 8) + 128
-            yuv[yIndex++] = y1.toByte()
-            yuv[yIndex++] = y2.toByte()
-            if (row % 2 == 0 && col % 4 == 0) {
-                yuv[uIndex++] = u.toByte()
-                yuv[vIndex++] = v.toByte()
+    fun convertRGB565ToYUV420(rgb: ByteArray, width: Int, height: Int): ByteArray {
+        val yuv = ByteArray(width * height * 3 / 2)
+        var yIndex = 0
+        var uIndex = width * height
+        var vIndex = uIndex + (uIndex / 4)
+        var index = 0
+        for (row in 0 until height) {
+            for (col in 0 until width step 2) {
+                val pixel1 = rgb[index].toInt() and 0xff
+                val pixel2 = rgb[index + 1].toInt() and 0xff
+                val r1 = (pixel1 and 0xf8) shr 3
+                val g1 = (pixel1 and 0x07) shl 3 or ((pixel2 and 0xe0) shr 5)
+                val b1 = pixel2 and 0x1f
+                val r2 = (rgb[index + 2].toInt() and 0xf8) shr 3
+                val g2 =
+                    (rgb[index + 2].toInt() and 0x07) shl 3 or ((rgb[index + 3].toInt() and 0xe0) shr 5)
+                val b2 = rgb[index + 3].toInt() and 0x1f
+                val y1 = ((66 * r1 + 129 * g1 + 25 * b1 + 128) shr 8) + 16
+                val y2 = ((66 * r2 + 129 * g2 + 25 * b2 + 128) shr 8) + 16
+                val u = ((-38 * r1 - 74 * g1 + 112 * b1 + 128) shr 8) + 128
+                val v = ((112 * r1 - 94 * g1 - 18 * b1 + 128) shr 8) + 128
+                yuv[yIndex++] = y1.toByte()
+                yuv[yIndex++] = y2.toByte()
+                if (row % 2 == 0 && col % 4 == 0) {
+                    yuv[uIndex++] = u.toByte()
+                    yuv[vIndex++] = v.toByte()
+                }
+                index += 4
             }
-            index += 4
         }
+        return yuv
     }
-    return yuv
-}
+
     fun convertARGB8888ToYUV420(argb: ByteArray, width: Int, height: Int): ByteArray {
         val yuv = ByteArray(width * height * 3 / 2)
         var yIndex = 0
@@ -262,67 +385,81 @@ fun convertRGB565ToYUV420(rgb: ByteArray, width: Int, height: Int): ByteArray {
         return yuv
     }
 
-    fun conver_argb_to_i420(i420: ByteArray, argb: IntArray, width: Int, height: Int) {
-        val frameSize = width * height
-        var yIndex = 0 // Y start index
-        var uIndex = frameSize // U statt index
-        var vIndex = frameSize * 5 / 4 // V start index: w*h*5/4
-        var a: Int
-        var R: Int
-        var G: Int
-        var B: Int
-        var Y: Int
-        var U: Int
-        var V: Int
-        var index = 0
-        for (j in 0 until height) {
-            for (i in 0 until width) {
-                a = argb[index] and -0x1000000 shr 24 //  is not used obviously
-                R = argb[index] and 0xff0000 shr 16
-                G = argb[index] and 0xff00 shr 8
-                B = argb[index] and 0xff shr 0
-
-                // well known RGB to YUV algorithm
-                Y = (66 * R + 129 * G + 25 * B + 128 shr 8) + 16
-                U = (-38 * R - 74 * G + 112 * B + 128 shr 8) + 128
-                V = (112 * R - 94 * G - 18 * B + 128 shr 8) + 128
-
-                // I420(YUV420p) -> YYYYYYYY UU VV
-                i420[yIndex++] = (if (Y < 0) 0 else if (Y > 255) 255 else Y).toByte()
-                if (j % 2 == 0 && i % 2 == 0) {
-                    i420[uIndex++] = (if (U < 0) 0 else if (U > 255) 255 else U).toByte()
-                    i420[vIndex++] = (if (V < 0) 0 else if (V > 255) 255 else V).toByte()
-                }
-                index++
-            }
-        }
-    }
-    fun yuy2ToYuv420(yuy2: ByteArray, width: Int, height: Int): ByteArray {
+    fun convertYUY2ToYUV420(yuy2: ByteArray, width: Int, height: Int): ByteArray {
         val ySize = width * height
         val uvSize = ySize / 4
         val yuv = ByteArray(ySize + 2 * uvSize)
-        var yIndex = 0
-        var uIndex = ySize
-        var vIndex = ySize + uvSize
+
         var i = 0
+        var yIndex = 0
+        var uvIndex = ySize
+
         while (i < yuy2.size) {
-            val y1 = yuy2[i].toInt() and 0xFF
-            val u = yuy2[i + 1].toInt() and 0xFF
-            val y2 = yuy2[i + 2].toInt() and 0xFF
-            val v = yuy2[i + 3].toInt() and 0xFF
+            val y1 = yuy2[i].toInt() and 0xff
+            val u = yuy2[i + 1].toInt() and 0xff
+            val y2 = yuy2[i + 2].toInt() and 0xff
+            val v = yuy2[i + 3].toInt() and 0xff
+
+            // Y plane
             yuv[yIndex++] = y1.toByte()
             yuv[yIndex++] = y2.toByte()
-            if (i % 4 == 0) {
-                yuv[uIndex++] = u.toByte()
-                yuv[vIndex++] = v.toByte()
+
+            // U and V planes
+            if (yIndex % 4 == 0) {
+                yuv[uvIndex++] = u.toByte()
+                yuv[uvIndex++] = v.toByte()
             }
+
             i += 4
         }
+
         return yuv
     }
 
+    fun getImageFormat(byteArray: ByteArray): String? {
+        if (byteArray.size < 2) {
+            // Массив должен содержать как минимум 2 байта для определения формата.
+            return null
+        }
 
+        val firstByte = byteArray[0].toInt()
+        val secondByte = byteArray[1].toInt()
+        Log.d(
+            "EpsonApiManager",
+            DecodeUtil.byteArrayToHexString(
+                byteArrayOf(
+                    firstByte.toByte(),
+                    secondByte.toByte(),
+                    byteArray[3]
+                )
+            )
+        )
 
+        return when {
+            // Проверяем, соответствует ли первый и второй байты массива формату h264.
+            firstByte == 0 && secondByte == 0 && byteArray.size > 3 && byteArray[2].toInt() == 0x01 -> "h264"
+
+            // Проверяем, соответствует ли первый и второй байты массива формату rgb565.
+            firstByte and 0xF8 == 0x38 && secondByte and 0xFC == 0x80 -> "rgb565"
+
+            // Проверяем, соответствует ли первый и второй байты массива формату argb8888.
+            firstByte == 0xFF && secondByte == 0 && byteArray.size > 3 && byteArray[2].toInt() == 0xFF -> "argb8888"
+
+            // Проверяем, соответствует ли первый и второй байты массива формату yuy2.
+            firstByte == 0x59 && secondByte == 0x55 -> "yuy2"
+
+            // Проверяем, соответствует ли первые 4 байта массива формату jpeg.
+            firstByte == 0xFF && secondByte == 0xD8 && byteArray.size > 3 && byteArray[2].toInt() == 0xFF && byteArray[3].toInt() == 0xE0 -> "jpeg"
+
+            // Проверяем, соответствует ли первые 8 байт массива формату png.
+            firstByte == 0x89 && secondByte == 0x50 && byteArray.size > 7 && byteArray[2].toInt() == 0x4E && byteArray[3].toInt() == 0x47 && byteArray[4].toInt() == 0x0D && byteArray[5].toInt() == 0x0A && byteArray[6].toInt() == 0x1A && byteArray[7].toInt() == 0x0A -> "png"
+
+            // Проверяем, соответствует ли первые 2 байта массива формату bmp.
+            firstByte == 0x42 && secondByte == 0x4D -> "bmp"
+
+            else -> "NOTHING KNOW"
+        }
+    }
 
 
 }
