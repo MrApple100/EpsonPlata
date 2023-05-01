@@ -7,7 +7,7 @@
 
     <fragment
         android:id="@+id/navigation_receive"
-        android:name="com.pedro.sample.live.FragmentReceive"
+        android:name="ru.object.epsoncamera.epsonRTSP.live.FragmentReceive"
         android:label="FragmentReceive"
         tools:layout="@layout/fragment_epson_receive"/>
     <fragment

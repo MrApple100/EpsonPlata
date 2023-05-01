@@ -46,6 +46,8 @@ open class RtspSurfaceView: SurfaceView {
     private var audioCodecConfig: ByteArray? = null
     private var firstFrameRendered = false
 
+    private lateinit var overlayView:ResultOverlayView
+
     interface RtspStatusListener {
         fun onRtspStatusConnecting()
         fun onRtspStatusConnected()
@@ -167,16 +169,17 @@ open class RtspSurfaceView: SurfaceView {
         holder.addCallback(surfaceCallback)
     }
 
-    fun init(uri: Uri, username: String?, password: String?) {
-        init(uri, username, password, null)
+    fun init(uri: Uri, username: String?,overlayView: ResultOverlayView, password: String?) {
+        init(uri, username, password, null,overlayView)
     }
 
-    fun init(uri: Uri, username: String?, password: String?, userAgent: String?) {
+    fun init(uri: Uri, username: String?, password: String?, userAgent: String?,overlayView: ResultOverlayView) {
         if (DEBUG) Log.v(TAG, "init(uri='$uri', username=$username, password=$password, userAgent='$userAgent')")
         this.uri = uri
         this.username = username
         this.password = password
         this.userAgent = userAgent
+        this.overlayView = overlayView
     }
 
     fun start(requestVideo: Boolean, requestAudio: Boolean) {
@@ -223,7 +226,7 @@ open class RtspSurfaceView: SurfaceView {
                 // Blocking call until stopped variable is true or connection failed
                 val rtspClient = RtspClient.Builder(socket, uri.toString(), rtspStopped, proxyClientListener)
                     .requestVideo(requestVideo)
-                    .requestAudio(requestAudio)
+                   // .requestAudio(requestAudio)
                     .withDebug(debug)
                     .withUserAgent(userAgent)
                     .withCredentials(username, password)
@@ -259,7 +262,7 @@ open class RtspSurfaceView: SurfaceView {
                 }
             Log.i(TAG, "Starting video decoder with mime type \"$videoMimeType\"")
             videoDecodeThread = VideoDecodeThread(
-                holder.surface, videoMimeType, surfaceWidth, surfaceHeight, videoFrameQueue, onFrameRenderedListener)
+                holder.surface, videoMimeType, surfaceWidth, surfaceHeight, videoFrameQueue, onFrameRenderedListener,overlayView)
             videoDecodeThread!!.name = "RTSP video thread [${getUriName()}]"
             videoDecodeThread!!.start()
         }

@@ -1,10 +1,16 @@
 package com.alexvas.rtsp.codec
 
+import android.graphics.Bitmap
 import android.media.MediaCodec
 import android.media.MediaCodec.OnFrameRenderedListener
 import android.media.MediaFormat
+import android.os.Handler
+import android.os.HandlerThread
 import android.util.Log
+import android.view.PixelCopy
 import android.view.Surface
+import android.view.View
+import com.alexvas.rtsp.widget.ResultOverlayView
 import com.alexvas.utils.DecodeUtil
 import com.google.android.exoplayer2.util.Util
 import java.nio.ByteBuffer
@@ -17,7 +23,9 @@ class VideoDecodeThread (
         private val width: Int,
         private val height: Int,
         private val videoFrameQueue: FrameQueue,
-        private val onFrameRenderedListener: OnFrameRenderedListener) : Thread() {
+        private val onFrameRenderedListener: OnFrameRenderedListener,
+        private val overlayView: ResultOverlayView
+) : Thread() {
 
     private var exitFlag: AtomicBoolean = AtomicBoolean(false)
 
@@ -95,8 +103,16 @@ class VideoDecodeThread (
                     MediaCodec.INFO_OUTPUT_FORMAT_CHANGED -> Log.d(TAG, "Decoder format changed: ${decoder.outputFormat}")
                     MediaCodec.INFO_TRY_AGAIN_LATER -> if (DEBUG) Log.d(TAG, "No output from decoder available")
                     else -> {
-                        if (outIndex >= 0)
-                            decoder.releaseOutputBuffer(outIndex, bufferInfo.size != 0 && !exitFlag.get())
+                        if (outIndex >= 0) {
+                            decoder.releaseOutputBuffer(
+                                outIndex,
+                                bufferInfo.size != 0 && !exitFlag.get()
+                            )
+                            val bitmap = getSnapshot(surface)
+                            if(bitmap!=null)
+                                overlayView.updateResults(bitmap)
+                        }
+
                     }
                 }
 
@@ -134,5 +150,26 @@ class VideoDecodeThread (
         private const val DEBUG = false
     }
 
+    private fun getSnapshot(surface: Surface): Bitmap? {
+        if (DEBUG) Log.v(TAG, "getSnapshot()")
+        val surfaceBitmap = Bitmap.createBitmap(1920, 1080, Bitmap.Config.ARGB_8888)
+        val lock = Object()
+        val success = AtomicBoolean(false)
+        val thread = HandlerThread("PixelCopyHelper")
+        thread.start()
+        val sHandler = Handler(thread.looper)
+        val listener = PixelCopy.OnPixelCopyFinishedListener { copyResult ->
+            success.set(copyResult == PixelCopy.SUCCESS)
+            synchronized (lock) {
+                lock.notify()
+            }
+        }
+        synchronized (lock) {
+            PixelCopy.request(surface, surfaceBitmap, listener, sHandler)///???
+            lock.wait()
+        }
+        thread.quitSafely()
+        return if (success.get()) surfaceBitmap else null
+    }
 }
 

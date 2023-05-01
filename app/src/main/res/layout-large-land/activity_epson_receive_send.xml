@@ -7,6 +7,9 @@
     <data>
 
     </data>
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
     <LinearLayout
         android:id="@+id/container"
         android:layout_width="match_parent"
@@ -24,12 +27,15 @@
         <fragment
             android:layout_weight="1"
             android:id="@+id/fragment_receive"
-            android:name="com.pedro.sample.live.FragmentReceive"
+            android:name="ru.object.epsoncamera.epsonRTSP.live.FragmentReceive"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             />
 
-
-
     </LinearLayout>
+        <com.alexvas.rtsp.widget.ResultOverlayView
+            android:id="@+id/result_overlay"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+    </androidx.constraintlayout.widget.ConstraintLayout>
 </layout>
