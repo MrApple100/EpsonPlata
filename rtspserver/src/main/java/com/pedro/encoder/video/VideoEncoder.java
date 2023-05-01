@@ -39,6 +39,7 @@ import com.pedro.encoder.utils.yuv.YuvToRgbConverter;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -66,7 +67,7 @@ public class VideoEncoder extends BaseEncoder implements GetCameraData {
   //for disable video
   private final FpsLimiter fpsLimiter = new FpsLimiter();
   private String type = CodecUtil.H264_MIME;
-  private FormatVideoEncoder formatVideoEncoder = FormatVideoEncoder.ARGB8888;//YUV420
+  private FormatVideoEncoder formatVideoEncoder = FormatVideoEncoder.YUV420PLANAR;//YUV420
   private int avcProfile = -1;
   private int avcProfileLevel = -1;
 
@@ -102,6 +103,7 @@ public class VideoEncoder extends BaseEncoder implements GetCameraData {
       if (encoder != null) {
         Log.i(TAG, "Encoder selected " + encoder.getName());
         codec = MediaCodec.createByCodecName(encoder.getName());
+      //  Log.d(TAG,""+ Arrays.toString(encoder.getCapabilitiesForType(type).colorFormats));
         if (this.formatVideoEncoder == FormatVideoEncoder.YUV420Dynamical) {
           this.formatVideoEncoder = chooseColorDynamically(encoder);
           if (this.formatVideoEncoder == null) {
@@ -142,12 +144,12 @@ public class VideoEncoder extends BaseEncoder implements GetCameraData {
       // Rotation by encoder.
       // Removed because this is ignored by most encoders, producing different results on different devices
       //  videoFormat.setInteger(MediaFormat.KEY_ROTATION, rotation);
-      videoFormat.setInteger(MediaFormat.KEY_LATENCY,0);
-      //videoFormat.setString(MediaFormat.KEY_LOW_LATENCY,"true");
+     // videoFormat.setInteger(MediaFormat.KEY_LATENCY,0);???
+      //videoFormat.setString(MediaFormat.KEY_LOW_LATENCY,"true");???
 
-      videoFormat.setInteger(MediaFormat.KEY_PRIORITY,0);
+     // videoFormat.setInteger(MediaFormat.KEY_PRIORITY,0);???
 
-      videoFormat.setInteger(MediaFormat.KEY_ENCODER_DELAY,0);
+     // videoFormat.setInteger(MediaFormat.KEY_ENCODER_DELAY,0);???
 
       if (this.avcProfile > 0) {
         // MediaFormat.KEY_PROFILE, API > 21
@@ -182,9 +184,9 @@ public class VideoEncoder extends BaseEncoder implements GetCameraData {
     if (resetTs) {
       fpsLimiter.setFPS(fps);
     }
-    if (formatVideoEncoder != FormatVideoEncoder.SURFACE && formatVideoEncoder != FormatVideoEncoder.ARGB8888) {
-      YUVUtil.preAllocateBuffers(width * height * 3 / 2);
-    }
+//    if (formatVideoEncoder != FormatVideoEncoder.SURFACE /*&& formatVideoEncoder != FormatVideoEncoder.ARGB8888*/) {
+//      YUVUtil.preAllocateBuffers(width * height * 3 / 2);
+//    }
     Log.i(TAG, "started");
   }
 
@@ -208,6 +210,7 @@ public class VideoEncoder extends BaseEncoder implements GetCameraData {
   }
 
   private FormatVideoEncoder chooseColorDynamically(MediaCodecInfo mediaCodecInfo) {
+    Log.d(TAG,""+ Arrays.toString(mediaCodecInfo.getCapabilitiesForType(type).colorFormats));
     for (int color : mediaCodecInfo.getCapabilitiesForType(type).colorFormats) {
       if (color == FormatVideoEncoder.YUV420PLANAR.getFormatCodec()) {
         return FormatVideoEncoder.YUV420PLANAR;
@@ -348,13 +351,17 @@ public class VideoEncoder extends BaseEncoder implements GetCameraData {
       MediaCodecInfo.CodecCapabilities codecCapabilities = mci.getCapabilitiesForType(mime);
       for (int color : codecCapabilities.colorFormats) {
         Log.i(TAG, "Color supported: " + color);
-        if (formatVideoEncoder == FormatVideoEncoder.SURFACE) {
-          if (color == FormatVideoEncoder.SURFACE.getFormatCodec()) return mci;
-        } else {
-          //check if encoder support any yuv420 color
-          if (color == FormatVideoEncoder.YUV420PLANAR.getFormatCodec()
-              || color == FormatVideoEncoder.YUV420SEMIPLANAR.getFormatCodec()) {
-            return mci;
+        if(formatVideoEncoder == FormatVideoEncoder.ARGB8888){
+          if (color == FormatVideoEncoder.ARGB8888.getFormatCodec()) return mci;
+        }else {
+          if (formatVideoEncoder == FormatVideoEncoder.SURFACE) {
+            if (color == FormatVideoEncoder.SURFACE.getFormatCodec()) return mci;
+          } else {
+            //check if encoder support any yuv420 color
+            if (color == FormatVideoEncoder.YUV420PLANAR.getFormatCodec()
+                    || color == FormatVideoEncoder.YUV420SEMIPLANAR.getFormatCodec()) {
+              return mci;
+            }
           }
         }
       }
@@ -448,7 +455,7 @@ public class VideoEncoder extends BaseEncoder implements GetCameraData {
   @Override
   protected Frame getInputFrame() throws InterruptedException {
     Frame frame = queue.take();
-    while(i1<5) {
+    if(i1<5) {
       Log.d("Poluchil", " " + System.currentTimeMillis());
       i1++;
     }
@@ -469,23 +476,24 @@ public class VideoEncoder extends BaseEncoder implements GetCameraData {
             //  : YUVUtil.NV21toYUV420byColor(buffer, width, height, formatVideoEncoder);
       frame.setBuffer(buffer);
       frame.setSize(buffer.length);
-      while(i2<5) {
+      if(i2<5) {
         Log.d("Obrabotal", " " + System.currentTimeMillis());
         i2++;
       }
       return frame;
     }
     if(isFlexRGBA8888){
-    //  byte[] buffer = frame.getBuffer();
-//       buffer = new YuvToRgbConverter().convertARGB8888ToYUV420P(
-//              buffer,
-//              width,
-//              height
-//            );
-//       frame.setFormat(ImageFormat.YUV_420_888);
-//      frame.setBuffer(buffer);
-//      frame.setSize(buffer.length);
-      while(i2<5) {
+      Log.d(TAG,"is FlexRGBA8888"+isFlexRGBA8888);
+      byte[] buffer = frame.getBuffer();
+       buffer = new YuvToRgbConverter().convertARGB8888ToYUV420P(
+              buffer,
+              width,
+              height
+            );
+       frame.setFormat(ImageFormat.YUV_420_888);
+       frame.setBuffer(buffer);
+       frame.setSize(buffer.length);
+      if(i2<5) {
         Log.d("Obrabotal", " " + System.currentTimeMillis());
         i2++;
       }
@@ -500,11 +508,11 @@ public class VideoEncoder extends BaseEncoder implements GetCameraData {
               width,
               height
       );
-      frame.setFormat(ImageFormat.FLEX_RGBA_8888);
+      frame.setFormat(ImageFormat.YUV_420_888);
     //  Log.d(TAG,"VideoEncoder 4 "+buffer.length);
       frame.setBuffer(buffer);
       frame.setSize(buffer.length);
-      while(i2<5) {
+      if(i2<5) {
         Log.d("Obrabotal", " " + System.currentTimeMillis());
         i2++;
       }

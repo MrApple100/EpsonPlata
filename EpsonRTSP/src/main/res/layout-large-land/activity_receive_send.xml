@@ -17,7 +17,7 @@
     <fragment
         android:layout_weight="1"
         android:id="@+id/fragment_send"
-        android:name="ru.`object`.epsoncamera.epsonRTSP.FragmentSend"
+        android:name="FragmentSend"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         />

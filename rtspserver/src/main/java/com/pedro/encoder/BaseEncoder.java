@@ -66,16 +66,18 @@ public abstract class BaseEncoder implements EncoderCallback {
     handlerThread = new HandlerThread(TAG);
     handlerThread.start();
     handler = new Handler(handlerThread.getLooper());
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-      createAsyncCallback();
-      codec.setCallback(callback, handler);
-    }
+//    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+//      Log.d(TAG,"CREATECALLBACK");
+//
+//      createAsyncCallback();
+//      codec.setCallback(callback, handler);
+//    }
   }
 
   private void initCodec() {
     Log.d(TAG,"INITINIT");
     codec.start();
-    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
+    //if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
       handler.post(new Runnable() {
         @Override
         public void run() {
@@ -90,7 +92,7 @@ public abstract class BaseEncoder implements EncoderCallback {
           }
         }
       });
-    }
+   // }
     running = true;
   }
 
@@ -184,17 +186,21 @@ public abstract class BaseEncoder implements EncoderCallback {
 
   protected abstract long calculatePts(Frame frame, long presentTimeUs);
 
+  int i3=0;
   private void processInput(@NonNull ByteBuffer byteBuffer, @NonNull MediaCodec mediaCodec,
       int inBufferIndex) throws IllegalStateException {
     try {
       Frame frame = getInputFrame();
       while (frame == null) frame = getInputFrame();
+      if(i3<5) {
+        Log.d("Input to MediaCodec", " " + System.currentTimeMillis());
+        i3++;
+      }
       byteBuffer.clear();
-      int size = Math.max(0, Math.min(frame.getSize(), byteBuffer.remaining()) - frame.getOffset());
-      Log.d(TAG,""+frame.getSize()+" "+byteBuffer.remaining()+" "+frame.getOffset());
-      byteBuffer.put(frame.getBuffer(), frame.getOffset(), size);
+      //int size = /*Math.max(0, Math.min(*/frame.getSize();/*, byteBuffer.remaining()) - frame.getOffset());*/
+      byteBuffer.put(frame.getBuffer(), frame.getOffset(), frame.getSize());
       long pts = calculatePts(frame, presentTimeUs);
-      mediaCodec.queueInputBuffer(inBufferIndex, 0, size, pts, 0);
+      mediaCodec.queueInputBuffer(inBufferIndex, 0, frame.getSize(), pts, 0);
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
     } catch (NullPointerException | IndexOutOfBoundsException e) {
@@ -208,15 +214,19 @@ public abstract class BaseEncoder implements EncoderCallback {
   protected abstract void sendBuffer(@NonNull ByteBuffer byteBuffer,
       @NonNull MediaCodec.BufferInfo bufferInfo);
 
-  int i=0;
+  int i1,i2=0;
   private void processOutput(@NonNull ByteBuffer byteBuffer, @NonNull MediaCodec mediaCodec,
       int outBufferIndex, @NonNull MediaCodec.BufferInfo bufferInfo) throws IllegalStateException {
+    if(i1<5) {
+      Log.d("Output from MediaCodec", " " + System.currentTimeMillis());
+      i1++;
+    }
     checkBuffer(byteBuffer, bufferInfo);
     sendBuffer(byteBuffer, bufferInfo);
     mediaCodec.releaseOutputBuffer(outBufferIndex, false);
-    while(i<5) {
+    if(i2<5) {
       Log.d("Otpravil", " " + System.currentTimeMillis());
-      i++;
+      i2++;
     }
   }
 
@@ -228,10 +238,12 @@ public abstract class BaseEncoder implements EncoderCallback {
     return running;
   }
 
+
   @Override
   public void inputAvailable(@NonNull MediaCodec mediaCodec, int inBufferIndex)
       throws IllegalStateException {
-    Log.d(TAG,"INPUTINPUT");
+   // Log.d(TAG,"INPUTINPUT");
+
     ByteBuffer byteBuffer;
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
       byteBuffer = mediaCodec.getInputBuffer(inBufferIndex);
@@ -260,6 +272,7 @@ public abstract class BaseEncoder implements EncoderCallback {
       public void onInputBufferAvailable(@NonNull MediaCodec mediaCodec, int inBufferIndex) {
         try {
           inputAvailable(mediaCodec, inBufferIndex);
+
         } catch (IllegalStateException e) {
           Log.i(TAG, "Encoding error", e);
           reloadCodec();

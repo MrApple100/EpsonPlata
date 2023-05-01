@@ -58,8 +58,8 @@ public enum FormatVideoEncoder {
         return MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV444Interleaved;
       case SURFACE:
         return MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface;
-      case ARGB8888:
-        return MediaCodecInfo.CodecCapabilities.COLOR_Format32bitABGR8888;
+      case ARGB8888://на моем телеофне honor 50 нет поддержки в энкодерах
+        return MediaCodecInfo.CodecCapabilities.COLOR_FormatRGBAFlexible;
       default:
         return -1;
     }

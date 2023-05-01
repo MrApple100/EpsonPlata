@@ -9,10 +9,10 @@
         android:id="@+id/navigation_receive"
         android:name="com.pedro.sample.live.FragmentReceive"
         android:label="FragmentReceive"
-        tools:layout="@layout/fragment_receive"/>
+        tools:layout="@layout/fragment_epson_receive"/>
     <fragment
         android:id="@+id/navigation_send"
         android:name="ru.object.epsoncamera.epsonRTSP.FragmentEpsonSend"
         android:label="FragmentSend"
-        tools:layout="@layout/fragment_send"/>
+        tools:layout="@layout/fragment_epson_send"/>
 </navigation>
