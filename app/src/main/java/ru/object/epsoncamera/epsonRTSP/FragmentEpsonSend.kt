@@ -1,12 +1,15 @@
 package ru.`object`.epsoncamera.epsonRTSP
 
 import android.os.Bundle
+import android.util.Log
 import android.view.*
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import com.pedro.rtsp.utils.ConnectCheckerRtsp
-import com.pedro.sample.R
+import org.koin.android.viewmodel.ext.android.viewModel
+import ru.`object`.epsoncamera.epsonLocal.R
 import ru.`object`.epsoncamera.epsonLocal.databinding.FragmentEpsonSendBinding
+import ru.`object`.epsoncamera.epsonRTSP.live.ReceiveViewModel
 import java.io.File
 
 class FragmentEpsonSend : Fragment(), ConnectCheckerRtsp, View.OnClickListener,
@@ -21,13 +24,19 @@ class FragmentEpsonSend : Fragment(), ConnectCheckerRtsp, View.OnClickListener,
 
     private lateinit var binding: FragmentEpsonSendBinding
 
+    private val liveViewModel: ReceiveViewModel by viewModel()
 
 
     private var currentDateAndTime = ""
     private lateinit var folder: File
 
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
+    override fun onCreateView(
+        inflater: LayoutInflater,
+        container: ViewGroup?,
+        savedInstanceState: Bundle?
+    ): View {
 
+        Log.d("FragmentEpsonSend", "FESFES " + liveViewModel)
 
         binding = FragmentEpsonSendBinding.inflate(inflater, container, false)
 
@@ -37,6 +46,7 @@ class FragmentEpsonSend : Fragment(), ConnectCheckerRtsp, View.OnClickListener,
 
         rtspServerEpson = RtspServerEpson(binding.surfaceView, this, 1935)
         binding.surfaceView.holder.addCallback(this)
+        liveViewModel.overlayView.value = binding.overlay
         return binding.root
     }
 
@@ -56,6 +66,7 @@ class FragmentEpsonSend : Fragment(), ConnectCheckerRtsp, View.OnClickListener,
         super.onStop()
         rtspServerEpson.stopPreview()
     }
+
     override fun onNewBitrateRtsp(bitrate: Long) {
 
     }
@@ -102,12 +113,16 @@ class FragmentEpsonSend : Fragment(), ConnectCheckerRtsp, View.OnClickListener,
     override fun onClick(view: View) {
         when (view.id) {
             R.id.b_start_stop -> if (!rtspServerEpson.isStreaming) {
-                if ( rtspServerEpson.prepareVideo()) {
+                if (rtspServerEpson.prepareVideo()) {
                     binding.bStartStop.setText(R.string.stop_button)
                     rtspServerEpson.startStream()
                     binding.tvUrl.text = rtspServerEpson.getEndPointConnection()
                 } else {
-                    Toast.makeText(requireContext(), "Error preparing stream, This device cant do it", Toast.LENGTH_SHORT)
+                    Toast.makeText(
+                        requireContext(),
+                        "Error preparing stream, This device cant do it",
+                        Toast.LENGTH_SHORT
+                    )
                         .show()
                 }
             } else {

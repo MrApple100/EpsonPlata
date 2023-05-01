@@ -12,10 +12,9 @@ import android.util.Log
 import android.view.*
 import android.widget.Toast
 import androidx.fragment.app.Fragment
-import androidx.lifecycle.ViewModelProvider
 import com.alexvas.rtsp.widget.RtspSurfaceView
 import com.pedro.sample.databinding.FragmentReceiveBinding
-import ru.`object`.epsoncamera.epsonRTSP.ActivityReceiveSend
+import org.koin.android.viewmodel.ext.android.viewModel
 import java.util.concurrent.atomic.AtomicBoolean
 
 
@@ -23,9 +22,9 @@ import java.util.concurrent.atomic.AtomicBoolean
 class FragmentReceive : Fragment() {
 
     private lateinit var binding: FragmentReceiveBinding
-    private lateinit var liveViewModel: ReceiveViewModel
+    private val liveViewModel: ReceiveViewModel by viewModel()
 
-    private val rtspStatusListener = object: RtspSurfaceView.RtspStatusListener {
+    private val rtspStatusListener = object : RtspSurfaceView.RtspStatusListener {
         override fun onRtspStatusConnecting() {
             binding.tvStatus.text = "RTSP connecting"
             binding.pbLoading.visibility = View.VISIBLE
@@ -62,13 +61,13 @@ class FragmentReceive : Fragment() {
             if (context == null) return
             binding.tvStatus.text = "RTSP username or password invalid"
             binding.pbLoading.visibility = View.GONE
-            Toast.makeText(context, binding.tvStatus.text , Toast.LENGTH_LONG).show()
+            Toast.makeText(context, binding.tvStatus.text, Toast.LENGTH_LONG).show()
         }
 
         override fun onRtspStatusFailed(message: String?) {
             if (context == null) return
             binding.tvStatus.text = "Error: $message"
-            Toast.makeText(context, binding.tvStatus.text , Toast.LENGTH_LONG).show()
+            Toast.makeText(context, binding.tvStatus.text, Toast.LENGTH_LONG).show()
             binding.pbLoading.visibility = View.GONE
         }
 
@@ -88,30 +87,41 @@ class FragmentReceive : Fragment() {
         val sHandler = Handler(thread.looper)
         val listener = PixelCopy.OnPixelCopyFinishedListener { copyResult ->
             success.set(copyResult == PixelCopy.SUCCESS)
-            synchronized (lock) {
+            synchronized(lock) {
                 lock.notify()
             }
         }
-        synchronized (lock) {
-            PixelCopy.request(binding.svVideo.holder.surface, surfaceBitmap, listener, sHandler)///???
+        synchronized(lock) {
+            PixelCopy.request(
+                binding.svVideo.holder.surface,
+                surfaceBitmap,
+                listener,
+                sHandler
+            )///???
             lock.wait()
         }
         thread.quitSafely()
         return if (success.get()) surfaceBitmap else null
     }
 
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
+    override fun onCreateView(
+        inflater: LayoutInflater,
+        container: ViewGroup?,
+        savedInstanceState: Bundle?
+    ): View {
         if (DEBUG) Log.v(TAG, "onCreateView()")
 
-        liveViewModel = ViewModelProvider(this).get(ReceiveViewModel::class.java)
+        Log.d(TAG, "FRFRFR " + liveViewModel)
         binding = FragmentReceiveBinding.inflate(inflater, container, false)
 
         binding.svVideo.setStatusListener(rtspStatusListener)
         binding.etRtspRequest.addTextChangedListener(object : TextWatcher {
             override fun afterTextChanged(s: Editable?) {
             }
+
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {
             }
+
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
                 val text = s.toString()
                 if (text != liveViewModel.rtspRequest.value) {
@@ -122,8 +132,10 @@ class FragmentReceive : Fragment() {
         binding.etRtspUsername.addTextChangedListener(object : TextWatcher {
             override fun afterTextChanged(s: Editable?) {
             }
+
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {
             }
+
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
                 val text = s.toString()
                 if (text != liveViewModel.rtspUsername.value) {
@@ -134,8 +146,10 @@ class FragmentReceive : Fragment() {
         binding.etRtspPassword.addTextChangedListener(object : TextWatcher {
             override fun afterTextChanged(s: Editable?) {
             }
+
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {
             }
+
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
                 val text = s.toString()
                 if (text != liveViewModel.rtspPassword.value) {
@@ -162,8 +176,13 @@ class FragmentReceive : Fragment() {
                 binding.svVideo.stop()
             } else {
                 val uri = Uri.parse(liveViewModel.rtspRequest.value)
-                binding.svVideo.init(uri, liveViewModel.rtspUsername.value, liveViewModel.rtspPassword.value, "rtsp-client-android",
-                    ActivityReceiveSend().getOverlayview())
+                binding.svVideo.init(
+                    uri,
+                    liveViewModel.rtspUsername.value,
+                    liveViewModel.rtspPassword.value,
+                    "rtsp-client-android",
+                    liveViewModel.overlayView.value!!
+                )
                 binding.svVideo.debug = binding.cbDebug.isChecked
                 binding.svVideo.start(binding.cbVideo.isChecked, binding.cbAudio.isChecked)
             }
@@ -202,7 +221,6 @@ class FragmentReceive : Fragment() {
         private val TAG: String = FragmentReceive::class.java.simpleName
         private const val DEBUG = true
     }
-
 
 
 }

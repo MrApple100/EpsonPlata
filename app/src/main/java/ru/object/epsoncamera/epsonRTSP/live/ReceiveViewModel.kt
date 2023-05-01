@@ -5,6 +5,7 @@ import android.content.Context
 import android.util.Log
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
+import com.alexvas.rtsp.widget.ResultOverlayView
 
 private const val RTSP_REQUEST_KEY = "rtsp_request"
 private const val RTSP_USERNAME_KEY = "rtsp_username"
@@ -23,6 +24,8 @@ class ReceiveViewModel : ViewModel() {
         private val TAG: String = ReceiveViewModel::class.java.simpleName
         private const val DEBUG = true
     }
+
+    val overlayView = MutableLiveData<ResultOverlayView>()
 
     val rtspRequest = MutableLiveData<String>().apply {
         value = DEFAULT_RTSP_REQUEST
