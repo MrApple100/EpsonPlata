@@ -1,4 +1,4 @@
-package com.alexvas.rtsp.demo.live
+package ru.`object`.epsoncamera.epsonRTSP.live
 
 import android.annotation.SuppressLint
 import android.content.Context

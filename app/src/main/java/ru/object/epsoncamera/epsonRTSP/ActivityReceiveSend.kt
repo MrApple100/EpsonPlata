@@ -5,10 +5,13 @@ import android.content.res.Configuration
 import android.os.Bundle
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
+import androidx.databinding.DataBindingUtil
 import androidx.navigation.findNavController
 import androidx.navigation.ui.setupWithNavController
+import com.alexvas.rtsp.widget.ResultOverlayView
 import com.google.android.material.bottomnavigation.BottomNavigationView
-import ru.`object`.epsoncamera.epsonLocal.R
+import com.pedro.sample.R
+import com.pedro.sample.databinding.ActivityReceiveSendBinding
 
 class ActivityReceiveSend : AppCompatActivity(){
 
@@ -19,13 +22,17 @@ class ActivityReceiveSend : AppCompatActivity(){
     private var mTextView_captureState: TextView? = null
     private var mTextView_test: TextView? = null
 
+    fun getOverlayview():ResultOverlayView{
+        return overlayView
+    }
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_epson_receive_send)
-
+        //setContentView(R.layout.activity_epson_receive_send)
+        val binding = DataBindingUtil.setContentView<ActivityReceiveSendBinding>(
+            instance, R.layout.a)
         val orientation = resources.configuration.orientation
-
 
         if (orientation == Configuration.ORIENTATION_LANDSCAPE) {
             // In landscape
@@ -35,9 +42,11 @@ class ActivityReceiveSend : AppCompatActivity(){
             val navController = findNavController(R.id.nav_epson_host_fragment)
             navView.setupWithNavController(navController)
         }
-
-        ActivityReceiveSend.mContext=this
-        ActivityReceiveSend.instance=this
+        if(mContext ==null){
+            mContext =this
+            instance =this
+            overlayView = binding.resultOverlay!!
+            }
        // mTextView_framerate = binding.textViewFramerate
 
     }
@@ -66,6 +75,7 @@ class ActivityReceiveSend : AppCompatActivity(){
     companion object {
         private lateinit var instance: ActivityReceiveSend
         private lateinit var mContext: Context
+        private lateinit var overlayView: ResultOverlayView
 
     }
 }

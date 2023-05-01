@@ -1,15 +1,8 @@
 package ru.`object`.epsoncamera.epsonRTSP
 
-import android.content.Context
 import android.media.MediaCodec
-import android.os.Build
 import android.view.SurfaceView
-import android.view.TextureView
-import androidx.annotation.RequiresApi
 import com.pedro.encoder.utils.CodecUtil
-import com.pedro.rtplibrary.base.Camera1Base
-import com.pedro.rtplibrary.view.LightOpenGlView
-import com.pedro.rtplibrary.view.OpenGlView
 import com.pedro.rtsp.rtsp.VideoCodec
 import com.pedro.rtsp.utils.ConnectCheckerRtsp
 import com.pedro.rtspserver.RtspServer

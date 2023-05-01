@@ -1,4 +1,4 @@
-package ru.`object`.epsoncamera.epsonRTSP.input
+package com.pedro.sample.input
 
 import android.content.Context
 import android.graphics.ImageFormat

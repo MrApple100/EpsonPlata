@@ -5,7 +5,6 @@ import android.graphics.Bitmap
 import android.graphics.Matrix
 import android.util.Log
 import androidx.camera.core.ImageProxy
-import ru.`object`.epsoncamera.epsonRTSP.input.EpsonApiManager
 import java.io.File
 import java.nio.ByteBuffer
 import kotlin.math.abs

@@ -1,4 +1,4 @@
-package com.pedro.sample.live
+package ru.`object`.epsoncamera.epsonRTSP.live
 
 import android.annotation.SuppressLint
 import android.graphics.Bitmap
@@ -13,9 +13,9 @@ import android.view.*
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
-import com.alexvas.rtsp.demo.live.ReceiveViewModel
 import com.alexvas.rtsp.widget.RtspSurfaceView
 import com.pedro.sample.databinding.FragmentReceiveBinding
+import ru.`object`.epsoncamera.epsonRTSP.ActivityReceiveSend
 import java.util.concurrent.atomic.AtomicBoolean
 
 
@@ -93,7 +93,7 @@ class FragmentReceive : Fragment() {
             }
         }
         synchronized (lock) {
-            PixelCopy.request(binding.svVideo.holder.surface, surfaceBitmap, listener, sHandler)
+            PixelCopy.request(binding.svVideo.holder.surface, surfaceBitmap, listener, sHandler)///???
             lock.wait()
         }
         thread.quitSafely()
@@ -162,7 +162,8 @@ class FragmentReceive : Fragment() {
                 binding.svVideo.stop()
             } else {
                 val uri = Uri.parse(liveViewModel.rtspRequest.value)
-                binding.svVideo.init(uri, liveViewModel.rtspUsername.value, liveViewModel.rtspPassword.value, "rtsp-client-android")
+                binding.svVideo.init(uri, liveViewModel.rtspUsername.value, liveViewModel.rtspPassword.value, "rtsp-client-android",
+                    ActivityReceiveSend().getOverlayview())
                 binding.svVideo.debug = binding.cbDebug.isChecked
                 binding.svVideo.start(binding.cbVideo.isChecked, binding.cbAudio.isChecked)
             }
