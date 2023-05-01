@@ -17,7 +17,7 @@ import com.pedro.encoder.video.GetVideoData
 import com.pedro.encoder.video.VideoEncoder
 import com.pedro.rtplibrary.base.recording.RecordController
 import com.pedro.rtplibrary.util.FpsListener
-import com.pedro.sample.input.EpsonApiManager
+import ru.`object`.epsoncamera.epsonRTSP.input.EpsonApiManager
 import java.io.IOException
 import java.nio.ByteBuffer
 
