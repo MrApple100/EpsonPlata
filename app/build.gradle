@@ -118,4 +118,11 @@ dependencies {
     implementation "androidx.navigation:navigation-fragment-ktx:${androidXNavigationVersion}"
     implementation "androidx.navigation:navigation-ui-ktx:${androidXNavigationVersion}"
 
+    //koin
+    implementation 'io.insert-koin:koin-core:2.2.3'
+    implementation 'io.insert-koin:koin-android:2.2.3'
+    implementation 'io.insert-koin:koin-android-viewmodel:2.2.3'
+
+
+
 }
