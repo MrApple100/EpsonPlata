@@ -1,16 +1,13 @@
 package ru.`object`.epsoncamera.epsonRTSP
 
-import android.os.Build
 import android.os.Bundle
 import android.view.*
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import com.pedro.rtsp.utils.ConnectCheckerRtsp
-import com.pedro.rtspserver.RtspServerCamera1
 import com.pedro.sample.R
-import com.pedro.sample.databinding.FragmentSendBinding
+import ru.`object`.epsoncamera.epsonLocal.databinding.FragmentEpsonSendBinding
 import java.io.File
-import java.util.*
 
 class FragmentEpsonSend : Fragment(), ConnectCheckerRtsp, View.OnClickListener,
     SurfaceHolder.Callback {
@@ -22,7 +19,7 @@ class FragmentEpsonSend : Fragment(), ConnectCheckerRtsp, View.OnClickListener,
 //  private lateinit var surfaceView: SurfaceView
 //  private lateinit var tv_url:TextView
 
-    private lateinit var binding: FragmentSendBinding
+    private lateinit var binding: FragmentEpsonSendBinding
 
 
 
@@ -32,7 +29,7 @@ class FragmentEpsonSend : Fragment(), ConnectCheckerRtsp, View.OnClickListener,
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
 
 
-        binding = FragmentSendBinding.inflate(inflater, container, false)
+        binding = FragmentEpsonSendBinding.inflate(inflater, container, false)
 
         requireActivity().window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
 

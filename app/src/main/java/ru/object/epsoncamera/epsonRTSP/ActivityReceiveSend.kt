@@ -5,18 +5,10 @@ import android.content.res.Configuration
 import android.os.Bundle
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
-import androidx.databinding.DataBindingUtil
 import androidx.navigation.findNavController
 import androidx.navigation.ui.setupWithNavController
-import com.epson.moverio.hardware.camera.*
-import com.epson.moverio.util.PermissionGrantResultCallback
-import com.epson.moverio.util.PermissionHelper
 import com.google.android.material.bottomnavigation.BottomNavigationView
-import com.google.android.material.snackbar.Snackbar
-import com.pedro.sample.R
-import com.pedro.sample.databinding.FragmentReceiveBinding
-import com.pedro.sample.databinding.FragmentSendBinding
-import java.util.*
+import ru.`object`.epsoncamera.epsonLocal.R
 
 class ActivityReceiveSend : AppCompatActivity(){
 
@@ -30,8 +22,7 @@ class ActivityReceiveSend : AppCompatActivity(){
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_receive_send)
-        val navView = findViewById<BottomNavigationView>(R.id.nav_view)
+        setContentView(R.layout.activity_epson_receive_send)
 
         val orientation = resources.configuration.orientation
 
@@ -40,6 +31,7 @@ class ActivityReceiveSend : AppCompatActivity(){
             // In landscape
 
         } else {
+            val navView = findViewById<BottomNavigationView>(R.id.nav_view)
             val navController = findNavController(R.id.nav_epson_host_fragment)
             navView.setupWithNavController(navController)
         }

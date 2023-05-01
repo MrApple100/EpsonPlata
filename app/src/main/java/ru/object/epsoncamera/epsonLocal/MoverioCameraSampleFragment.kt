@@ -531,13 +531,13 @@ class MoverioCameraSampleFragment : Activity(), CaptureStateCallback2,
 
         override fun getDropDownView(position: Int, convertView: View?, parent: ViewGroup): View {
             val v = super.getDropDownView(position, convertView, parent) as TextView
-            println("VVV"+ v)
+           // println("VVV"+ v)
             val captureInfo = captureInfoList.get(position)
-            println("VVV2"+ captureInfo)
+           // println("VVV2"+ captureInfo)
 
             v.text =
                 captureInfo[0].toString() + "x" + captureInfo[1] + ", " + captureInfo[2] + "[fps]"
-            println("VVV3"+ v.text)
+           // println("VVV3"+ v.text)
 
             return v
         }
