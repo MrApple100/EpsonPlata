@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <layout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+
     >
 
     <data>
@@ -14,17 +16,27 @@
         tools:context="ru.object.epsoncamera.epsonRTSP.ActivityReceiveSend">
 
         <!--    Used to support api 16 but OpenGlView is recommended-->
+        <FrameLayout
+            app:layout_constraintDimensionRatio="4:3"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintLeft_toLeftOf="parent"
+            app:layout_constraintRight_toRightOf="parent"
+            app:layout_constraintTop_toTopOf="parent">
 
         <SurfaceView
             android:id="@+id/surfaceView"
             android:layout_width="match_parent"
             android:layout_height="match_parent" />
+
         <com.alexvas.rtsp.widget.ResultOverlayView
             android:id="@+id/overlay"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             >
         </com.alexvas.rtsp.widget.ResultOverlayView>
+        </FrameLayout>
 
         <TextView
             android:id="@+id/tv_url"
@@ -41,34 +53,17 @@
             android:layout_height="wrap_content"
             android:layout_alignParentBottom="true"
             android:layout_margin="20dp"
-            android:gravity="center"
             android:orientation="horizontal"
-            android:weightSum="3">
-
-            <Button
-                android:id="@+id/b_record"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginEnd="5dp"
-                android:layout_marginRight="5dp"
-                android:layout_weight="1"
-                android:text="@string/start_record" />
+            >
 
             <Button
                 android:id="@+id/b_start_stop"
-                android:layout_width="0dp"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginEnd="5dp"
                 android:layout_marginRight="5dp"
-                android:layout_weight="1"
                 android:text="@string/start_button" />
 
-            <Button
-                android:id="@+id/switch_camera"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="@string/switch_camera_button" />
         </LinearLayout>
     </RelativeLayout>
 </layout>

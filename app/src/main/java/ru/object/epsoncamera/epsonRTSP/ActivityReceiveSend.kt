@@ -4,13 +4,17 @@ import android.content.Context
 import android.content.res.Configuration
 import android.os.Bundle
 import android.util.Log
+import android.view.View
+import android.widget.Button
 import android.widget.TextView
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.navigation.findNavController
 import androidx.navigation.ui.setupWithNavController
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import org.koin.android.viewmodel.ext.android.viewModel
 import ru.`object`.epsoncamera.epsonLocal.R
+import ru.`object`.epsoncamera.epsonRTSP.live.FragmentReceive
 import ru.`object`.epsoncamera.epsonRTSP.live.ReceiveViewModel
 
 class ActivityReceiveSend : AppCompatActivity() {
@@ -54,6 +58,18 @@ class ActivityReceiveSend : AppCompatActivity() {
 */
         // mTextView_framerate = binding.textViewFramerate
 
+        val hideshow = findViewById<Button>(R.id.HideShow);
+        hideshow.setOnClickListener(View.OnClickListener {
+            val fr = findViewById<View>(R.id.fragment_receive)
+            if(fr.visibility==View.VISIBLE){
+                (it as Button).text="Show"
+                fr.visibility=View.GONE
+            }else{
+                (it as Button).text="Hide"
+                fr.visibility=View.VISIBLE
+            }
+        })
+
     }
 
     public override fun onStart() {
@@ -76,6 +92,7 @@ class ActivityReceiveSend : AppCompatActivity() {
         super.onStop()
 
     }
+
 
 
     companion object {

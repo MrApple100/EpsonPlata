@@ -130,7 +130,6 @@ class FragmentEpsonSend : Fragment(), ConnectCheckerRtsp, View.OnClickListener,
                 rtspServerEpson.stopStream()
                 binding.tvUrl.text = ""
             }
-
             else -> {
             }
         }

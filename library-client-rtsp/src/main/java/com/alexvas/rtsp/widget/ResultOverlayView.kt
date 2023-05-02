@@ -1,11 +1,9 @@
 package com.alexvas.rtsp.widget
 
 import android.content.Context
-import android.graphics.Bitmap
-import android.graphics.Canvas
-import android.graphics.Color
-import android.graphics.Paint
+import android.graphics.*
 import android.util.AttributeSet
+import android.util.Log
 import android.view.View
 
 class ResultOverlayView @JvmOverloads constructor(
@@ -16,6 +14,7 @@ class ResultOverlayView @JvmOverloads constructor(
     var bitmap = Bitmap.createBitmap(1920, 1080, Bitmap.Config.ARGB_8888)
     fun updateResults(bitmap: Bitmap) {
         this.bitmap=bitmap
+
         invalidate()
     }
     var alphaColor = 70
@@ -31,8 +30,14 @@ class ResultOverlayView @JvmOverloads constructor(
 
     override fun onDraw(canvas: Canvas?) {
         super.onDraw(canvas)
+        val scalew = canvas!!.width.toFloat() / bitmap.width
+        val scaleh = canvas!!.height.toFloat() / bitmap.height
+        Log.d("ROVROV"," "+scalew+" "+scaleh)
 
-        canvas!!.drawBitmap(bitmap,0.0f,0.0f,boxPaint)
+        val matrix = Matrix()
+        matrix.postScale(scalew, scaleh)
+
+        canvas!!.drawBitmap(bitmap,matrix,boxPaint)
     }
 
 
