@@ -114,7 +114,7 @@ public class RtpParser {
         // 24 02 01 12 80 e1 01 d2  00 07 43 f0
         byte[] header = new byte[RTP_HEADER_SIZE];
         // Skip 4 bytes (TCP only). No those bytes in UDP.
-        NetUtils.readData(inputStream, header, 0, 4);
+        NetUtils.readData(inputStream, header, 0, 4); //only UDP
         if (DEBUG && header[0] == 0x24)
             Log.d(TAG, header[1] == 0 ? "RTP packet" : "RTCP packet");
 
