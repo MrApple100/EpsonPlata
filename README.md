@@ -1,6 +1,9 @@
 # EpsonPlata
 
+EpsonRTSP & EpsonLocal IN ONE:
 https://disk.yandex.ru/d/YU1g6ym3-quXkw
+Without Camera Permission:
+https://disk.yandex.ru/d/mGtH3TAKT8dLNw
 
 Проект предполагает взаимодействие с аппаратурой Epson очками модели bt-035e.
 НО! Хочется отметить, что очки представляют из себя:
