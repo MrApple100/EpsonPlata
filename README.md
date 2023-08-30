@@ -6,6 +6,9 @@ https://disk.yandex.ru/d/YU1g6ym3-quXkw
 Without Camera Permission:
 https://disk.yandex.ru/d/mGtH3TAKT8dLNw
 
+Use Mobile-Camera Plata
+https://disk.yandex.ru/d/hFPZSJLNgblMKA
+
 Проект предполагает взаимодействие с аппаратурой Epson очками модели bt-035e.
 НО! Хочется отметить, что очки представляют из себя:
 * каркас
